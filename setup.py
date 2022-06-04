@@ -106,8 +106,8 @@ class VP:
   def __init__(self, name='', type='l'):
     self.name = name
     self.type = type
-    self.x = np.arange(1, 261, dtype=object)
-    self.y = np.zeros(260, dtype=object)
+    self.x = np.arange(1, 356, dtype=object)
+    self.y = np.zeros(355, dtype=object)
     self.poly = None
 
   def set_value(self, px, py):
@@ -138,7 +138,7 @@ class VP:
     if self.poly is None:
       print("Polynomial not yet interpolated.")
       return
-    for i in range(260):
+    for i in range(355):
       if self.y[i] - self.poly(self.x[i]):
         print(f"Unexpected discrepancy at x={self.x[i]}. Expected value: {self.y[i]}. Interpolated value: {self.poly(self.x[i])}.")
       elif self.y[i] or all:
@@ -190,22 +190,41 @@ if __name__ == "__main__":
     import_var(f'rho{i}1', l_rhoi1(i), r_rhoi1(i), o_rhoi1(i)) 
     import_var(f'rho{i}2', l_rhoi2(i), r_rhoi2(i), o_rhoi2(i)) 
 
-  #PI_ij
+  #P_ij
   for i in range(5):
     for j in range(5):
-      import_var(f'P{i}{j}12', l_Pij12(i, j), r_Pij12(i, j), o_Pij12(i, j))
-      import_var(f'P{i}{j}34', l_Pij34(i, j), r_Pij34(i, j), o_Pij34(i, j))
-      import_var(f'P{i}{j}1234', l_Pij1234(i, j), r_Pij1234(i, j), o_Pij1234(i, j))
+      import_var(f'P{i}{j}01', l_Pij01(i, j), r_Pij01(i, j), o_Pij01(i, j))
+      import_var(f'P{i}{j}23', l_Pij23(i, j), r_Pij23(i, j), o_Pij23(i, j))
+      import_var(f'P{i}{j}0123', l_Pij0123(i, j), r_Pij0123(i, j), o_Pij0123(i, j))
       import_var(f'P{i}{j}', l_Pij(i, j), r_Pij(i, j), o_Pij(i, j))
       import_var(f'P{i}{j}2', l_Pij2(i, j), r_Pij2(i, j), o_Pij2(i, j))
 
-  #D_i
+  #S_ij
   for i in range(5):
-    import_var(f'D{i}12', l_Di12(i), r_Di12(i), o_Di12(i))
-    import_var(f'D{i}34', l_Di34(i), r_Di34(i), o_Di34(i))
-    import_var(f'D{i}1234', l_Di1234(i), r_Di1234(i), o_Di1234(i))
-    import_var(f'D{i}', l_Di(i), r_Di(i), o_Di(i))
-    import_var(f'D{i}2', l_Di2(i), r_Di2(i), o_Di2(i))
+    for j in range(i):
+      import_var(f'S{i}{j}01', l_Sij01(i, j), r_Sij01(i, j), o_Sij01(i, j))
+      import_var(f'S{i}{j}23', l_Sij23(i, j), r_Sij23(i, j), o_Sij23(i, j))
+      import_var(f'S{i}{j}0123', l_Sij0123(i, j), r_Sij0123(i, j), o_Sij0123(i, j))
+      import_var(f'S{i}{j}', l_Sij(i, j), r_Sij(i, j), o_Sij(i, j))
+      import_var(f'S{i}{j}2', l_Sij2(i, j), r_Sij2(i, j), o_Sij2(i, j))
+
+  #D_ij
+  for i in range(5):
+    for j in range(5):
+      import_var(f'Dp{i}{j}', l_Dpij(i, j), r_Dpij(i, j), o_Dpij(i, j))
+    
+    for j in range(i):
+      import_var(f'Dm{i}{j}', l_Dmij(i, j), r_Dmij(i, j), o_Dmij(i, j))
+
+  #T_i
+  for i in range(5):
+    import_var(f'T{i}12', l_Ti12(i), r_Ti12(i), o_Ti12(i))
+    import_var(f'T{i}34', l_Ti34(i), r_Ti34(i), o_Ti34(i))
+    import_var(f'T{i}08', l_Ti08(i), r_Ti08(i), o_Ti08(i))
+    import_var(f'T{i}76', l_Ti76(i), r_Ti76(i), o_Ti76(i))
+    import_var(f'T{i}0876', l_Ti0876(i), r_Ti0876(i), o_Ti0876(i))
+    import_var(f'Tp{i}', l_Tpi(i), r_Tpi(i), o_Tpi(i))
+    import_var(f'Tm{i}', l_Tmi(i), r_Tmi(i), o_Tmi(i))
 
   #c_i
   for i in range(5):

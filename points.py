@@ -13,13 +13,13 @@ def l_aij(i, j):
     ret.append((116+5*i+q, d(j, 2)))
 
     if q > i:
-      ret.append((216+sum([n for n in range(q)])+i, d(j, 0))
-      ret.append((226+sum([n for n in range(q)])+i, d(j, 2))
+      ret.append((216+sum([n for n in range(q)])+i, d(j, 0)))
+      ret.append((226+sum([n for n in range(q)])+i, d(j, 2)))
 
   s = sum([n for n in range(i)])
   for q in range(i):
-    ret.append((216+s+q, d(j, 0)) 
-    ret.append((226+s+q, d(j, 2)) 
+    ret.append((216+s+q, d(j, 0))) 
+    ret.append((226+s+q, d(j, 2))) 
 
   return ret 
 
@@ -33,15 +33,15 @@ def r_aij(i, j):
     ret.append((166+5*i+q, d(j, 4)))
 
     if q > i:
-      ret.append((216+sum([n for n in range(q)])+i, d(j, 1))
-      ret.append((226+sum([n for n in range(q)])+i, d(j, 3))
-      ret.append((246+sum([n for n in range(q)])+i, d(j, 4))
+      ret.append((216+sum([n for n in range(q)])+i, d(j, 1)))
+      ret.append((226+sum([n for n in range(q)])+i, d(j, 3)))
+      ret.append((246+sum([n for n in range(q)])+i, d(j, 4)))
 
   s = sum([n for n in range(i)])
   for q in range(i):
-    ret.append((216+s+q, d(j, 1)) 
-    ret.append((226+s+q, d(j, 3)) 
-    ret.append((246+s+q, d(j, 4)) 
+    ret.append((216+s+q, d(j, 1))) 
+    ret.append((226+s+q, d(j, 3))) 
+    ret.append((246+s+q, d(j, 4))) 
 
   return ret 
  
@@ -58,8 +58,8 @@ def l_wij(i, j):
   ]
 
   for q in range(5):
-    ret.append((91+i+5*q, d(j, 0))
-    ret.append((116+i+5*q, d(j, 2))
+    ret.append((91+i+5*q, d(j, 0)))
+    ret.append((116+i+5*q, d(j, 2)))
   
   return ret
 
@@ -73,9 +73,9 @@ def r_wij(i, j):
   ]
 
   for q in range(5):
-    ret.append((91+i+5*q, d(j, 1))
-    ret.append((116+i+5*q, d(j, 3))
-    ret.append((166+i+5*q, d(j, 4))
+    ret.append((91+i+5*q, d(j, 1)))
+    ret.append((116+i+5*q, d(j, 3)))
+    ret.append((166+i+5*q, d(j, 4)))
 
   return ret
 
@@ -230,7 +230,7 @@ def o_Pij(i, j):
 def l_Pij2(i, j):
   return [
     (266+5*i+j, 1),
-    (341+i, d(i, j))
+    (341+i, d(i, j)),
     (346+i, -d(i, j))
   ]
 
@@ -240,6 +240,8 @@ def r_Pij2(i, j):
   
   for q in range(j+1, 5):
     ret.append((266+sum([n for n in range(q)])+j, -d(i, j)))
+
+  return ret
 
 
 def o_Pij2(i, j):
@@ -560,7 +562,6 @@ def r_v1():
     ret.append((76+q, -2))
     ret.append((81+q, -2))
     ret.append((86+q, -1))
-    ret.append((166+q, -1))
     ret.append((246+q, -1))
     ret.append((301+q, -2))
     ret.append((306+q, -4))
@@ -569,8 +570,10 @@ def r_v1():
     ret.append((331+q, 4))
     ret.append((351+q, 1))
 
-  for q in range(50):
+  for q in range(25):
     ret.append((91+q, -1))
+    ret.append((116+q, -1))
+    ret.append((166+q, -1))
 
   for q in range(20):
     ret.append((216+q, -1))

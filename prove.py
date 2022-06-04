@@ -19,7 +19,7 @@ def prove(a, w, r):
       register(f'a{i}{j}', (a[i] >> j) & 1) 
       register(f'w{i}{j}', (w[i] >> j) & 1) 
     register(f'w{i}34', vars.get(f'w{i}3') * vars.get(f'w{i}4'))
-    register(f'w{i}12', vars.get(f'w{i}1') * (vars.get(f'w{i}2') - 1 ))
+    register(f'w{i}12', vars.get(f'w{i}1') * (vars.get(f'w{i}2') - vars.get('v1')))
 
     register(f'r{i}', r[i])
     register(f'r{i}2', r[i]*r[i])
@@ -30,34 +30,53 @@ def prove(a, w, r):
 
   for i in range(5):
     for j in range(5):
-      register(f'P{i}{j}12', (vars.get(f'a{i}0') + vars.get(f'w{j}0') - vars.get('v1')) * \
+      register(f'P{i}{j}01', (vars.get(f'a{i}0') + vars.get(f'w{j}0') - vars.get('v1')) * \
         (vars.get(f'a{i}1') + vars.get(f'w{j}1') - vars.get('v1'))) 
 
-      register(f'P{i}{j}34', (vars.get(f'a{i}2') + vars.get(f'w{j}2') - vars.get('v1')) * \
+      register(f'P{i}{j}23', (vars.get(f'a{i}2') + vars.get(f'w{j}2') - vars.get('v1')) * \
         (vars.get(f'a{i}3') + vars.get(f'w{j}3') - vars.get('v1'))) 
 
-      register(f'P{i}{j}1234', vars.get(f'P{i}{j}12') * vars.get(f'P{i}{j}34'))
+      register(f'P{i}{j}0123', vars.get(f'P{i}{j}01') * vars.get(f'P{i}{j}23'))
 
-      register(f'P{i}{j}', vars.get(f'P{i}{j}1234') * (vars.get(f'a{i}4') + vars.get(f'w{j}4') - vars.get('v1'))) 
+      register(f'P{i}{j}', vars.get(f'P{i}{j}0123') * (vars.get(f'a{i}4') + vars.get(f'w{j}4') - vars.get('v1'))) 
 
       register(f'P{i}{j}2', vars.get(f'P{i}{j}') * vars.get(f'P{i}{j}'))
 
+    for j in range(i):
+      register(f'S{i}{j}01', (vars.get(f'a{i}0') + vars.get(f'a{j}0') - vars.get('v1')) * \
+        (vars.get(f'a{i}1') + vars.get(f'a{j}1') - vars.get('v1'))) 
+
+      register(f'S{i}{j}23', (vars.get(f'a{i}2') + vars.get(f'a{j}2') - vars.get('v1')) * \
+        (vars.get(f'a{i}3') + vars.get(f'a{j}3') - vars.get('v1'))) 
+
+      register(f'S{i}{j}0123', vars.get(f'S{i}{j}01') * vars.get(f'S{i}{j}23'))
+
+      register(f'S{i}{j}', vars.get(f'S{i}{j}0123') * (vars.get(f'a{i}4') + vars.get(f'a{j}4') - vars.get('v1'))) 
+
+      register(f'S{i}{j}2', vars.get(f'S{i}{j}') * vars.get(f'S{i}{j}'))
+
+  for i in range(5):
     for j in range(5):
-      register(f'D{i}12', sum([(vars.get(f'a{i}{k}') - vars.get(f'w0{k}')) * 2**k for k in range(5)]) * \
-        sum([(vars.get(f'a{i}{k}') - vars.get(f'w1{k}')) * 2**k for k in range(5)]))
+      register(f'Dp{i}{j}', vars.get(f'P{i}{j}2') * (vars.get('v1') - vars.get(f'P{j}{j}')))
 
-      register(f'D{i}34', sum([(vars.get(f'a{i}{k}') - vars.get(f'w2{k}')) * 2**k for k in range(5)]) * \
-        sum([(vars.get(f'a{i}{k}') - vars.get(f'w3{k}')) * 2**k for k in range(5)])) 
+    for j in range(i):
+      register(f'Dm{i}{j}', vars.get(f'S{i}{j}2') * (vars.get('v1') - vars.get(f'P{j}{j}')))
 
-      register(f'D{i}1234', vars.get(f'D{i}12') * vars.get(f'D{i}34'))
+    register(f'T{i}12', (sum([vars.get(f'Dp{i}{j}') for j in range(5)]) - sum([vars.get(f'Dm{i}{j}') for j in range(i)]) - 1 * vars.get('v1')) * \
+      (sum([vars.get(f'Dp{i}{j}') for j in range(5)]) - sum([vars.get(f'Dm{i}{j}') for j in range(i)]) - 2 * vars.get('v1'))) 
+    register(f'T{i}34', (sum([vars.get(f'Dp{i}{j}') for j in range(5)]) - sum([vars.get(f'Dm{i}{j}') for j in range(i)]) - 3 * vars.get('v1')) * \
+      (sum([vars.get(f'Dp{i}{j}') for j in range(5)]) - sum([vars.get(f'Dm{i}{j}') for j in range(i)]) - 4 * vars.get('v1'))) 
+    register(f'T{i}08', (sum([vars.get(f'Dp{i}{j}') for j in range(5)]) - sum([vars.get(f'Dm{i}{j}') for j in range(i)])) * \
+      (sum([vars.get(f'Dp{i}{j}') for j in range(5)]) - sum([vars.get(f'Dm{i}{j}') for j in range(i)]) + 1 * vars.get('v1'))) 
+    register(f'T{i}76', (sum([vars.get(f'Dp{i}{j}') for j in range(5)]) - sum([vars.get(f'Dm{i}{j}') for j in range(i)]) + 2 * vars.get('v1')) * \
+      (sum([vars.get(f'Dp{i}{j}') for j in range(5)]) - sum([vars.get(f'Dm{i}{j}') for j in range(i)]) + 3 * vars.get('v1'))) 
+    register(f'T{i}0876', vars.get(f'T{i}08') * vars.get(f'T{i}76'))
+    register(f'Tp{i}', vars.get(f'T{i}12') * vars.get(f'T{i}34'))
+    register(f'Tm{i}', vars.get(f'T{i}0876') * (sum([vars.get(f'Dp{i}{j}') for j in range(5)]) - sum([vars.get(f'Dm{i}{j}') for j in range(i)]) + 4 * vars.get('v1')))
 
-      register(f'D{i}', vars.get(f'D{i}1234') * sum([(vars.get(f'a{i}{k}') - vars.get(f'w4{k}')) * 2**k for k in range(5)]))
-
-      register(f'D{i}2', vars.get(f'D{i}') * vars.get(f'D{i}'))
-
-    register(f'c{i}0', vars.get(f'rho{i}0') * sum([vars.get(f'P{i}{j}2') for j in range(5)]))
-    register(f'c{i}1', vars.get(f'rho{i}1') * (vars.get(f'D{i}2') + vars.get(f'P{i}{i}2')))
-    register(f'c{i}2', vars.get(f'rho{i}2') * sum([(vars.get(f'a{i}{k}') - vars.get(f'w{i}{k}')) * 2**k for k in range(5)]))
+    register(f'c{i}0', vars.get(f'rho{i}0') * vars.get(f'Tm{i}'))
+    register(f'c{i}1', vars.get(f'rho{i}1') * (vars.get(f'Tp{i}') + vars.get(f'P{i}{i}2')))
+    register(f'c{i}2', vars.get(f'rho{i}2') * (vars.get('v1') - vars.get(f'P{i}{i}2')))
 
   polys = {}
   polys['l'] = fpoly1d(0)
@@ -79,7 +98,7 @@ def prove(a, w, r):
       polys[type] += poly
 
   count = 0
-  for i in range(1, 261):
+  for i in range(1, 356):
     eval = (polys['l']*polys['r'] - polys['o'])(i)
     if eval:
       print('/'*60)
