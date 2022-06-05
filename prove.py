@@ -2,7 +2,9 @@
 
 from setup import fpoly1d
 
-def prove(a, w, r):
+import pandas as pd
+
+def prove(a, w, r, df=None):
   assert len(a) == 5
   assert len(w) == 5
   assert len(r) == 5
@@ -85,17 +87,18 @@ def prove(a, w, r):
 
   debug_polys = []
 
-  import csv
-  with open('setup.csv', mode='r') as file:
-    csv_reader = csv.reader(file, delimiter=',')
-    for line in csv_reader:
-      variable, type, *coeffs = line 
-      value = vars.get(variable)
-      coeffs = list(map(int, coeffs))
-      poly = fpoly1d(coeffs)
-      debug_polys.append((fpoly1d(poly), variable, type, value))
-      poly *= value
-      polys[type] += poly
+  if df is None:
+    df = pd.read_csv('setup.csv', index_col=0)
+    df.fillna(0, inplace=True)
+      
+  for _, row in df.iterrows():
+    variable, type, *coeffs = row 
+    value = vars.get(variable)
+    coeffs = list(map(int, coeffs))
+    poly = fpoly1d(coeffs)
+    debug_polys.append((fpoly1d(poly), variable, type, value))
+    poly *= value
+    polys[type] += poly
 
   count = 0
   for i in range(1, 356):
@@ -108,8 +111,11 @@ def prove(a, w, r):
         if p(i):
           print('Var:', var, 'Type:', t, 'Value:', v, 'Eval:', p(i))
       count += 1 
-
-  print(count)
+  
+  if count:
+    print(count)
+    return False
+  return True
 
 if __name__ == "__main__":
   import sys

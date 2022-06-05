@@ -31,6 +31,7 @@ class fpoly1d:
       return
  
     c = np.atleast_1d(c).astype(object)
+    c = np.trim_zeros(c, 'f')
     self.coeffs = np.mod(c, self.prime)
 
   def __call__(self, val):
@@ -128,7 +129,6 @@ class VP:
         fac = self.x[i] - self.x[j]
         pt *= fpoly1d([1, -self.x[j]])/fac
       self.poly += pt
-    self.print()
 
   def print(self, all=False):
     print('-'*40)
@@ -145,7 +145,8 @@ class VP:
         print(f"{self.x[i]}: {self.poly(self.x[i])}")
 
 
-if __name__ == "__main__":
+def setup(write=False):
+
   polys = []
   
   def import_var(name, points_l, points_r, points_o):
@@ -235,21 +236,16 @@ if __name__ == "__main__":
   #v_one
   import_var('v1', l_v1(), r_v1(), o_v1())
 
-  import csv
-  
-  with open('setup.csv', mode='w') as file:
-    csv_writer = csv.writer(file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+  if write:
+    import pandas as pd
+
+    df = pd.DataFrame() 
     for poly in polys:
-      csv_writer.writerow([poly.name, poly.type, *poly.poly.coeffs])
+      row = pd.concat([pd.DataFrame({'name': poly.name, 'type': poly.type}, index=[0]), pd.DataFrame({f'{len(poly.poly.coeffs) - i}': poly.poly.coeffs[i] for i in range(len(poly.poly.coeffs))}, index=[0])], axis=1)
+      df = pd.concat([df, row], ignore_index=True)
+    df.to_csv('setup.csv')
       
     
 
-
-
-
-
-
-
-
-
-
+if __name__ == '__main__':
+  setup(write=True)
