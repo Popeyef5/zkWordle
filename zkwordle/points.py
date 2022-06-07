@@ -239,7 +239,7 @@ def r_Pij2(i, j):
   ret = [(266+j+5*q, -d(i, j)) for q in range(5)]
   
   for q in range(j+1, 5):
-    ret.append((266+sum([n for n in range(q)])+j, -d(i, j)))
+    ret.append((291+sum([n for n in range(q)])+j, -d(i, j)))
 
   return ret
 
@@ -563,6 +563,7 @@ def r_v1():
     ret.append((81+q, -2))
     ret.append((86+q, -1))
     ret.append((246+q, -1))
+    ret.append((251+q, -1))
     ret.append((301+q, -2))
     ret.append((306+q, -4))
     ret.append((311+q, 1))

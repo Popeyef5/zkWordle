@@ -1,14 +1,22 @@
 #!/usr/bin/env python3
 
-from setup import fpoly1d
+from zkwordle.util import fpoly1d
 
-import pandas as pd
+def prove(a, w, r, df=None, csv=''):
+  import pandas as pd
 
-def prove(a, w, r, df=None):
   assert len(a) == 5
   assert len(w) == 5
   assert len(r) == 5
 
+  if df is None:
+    if csv:
+      df = pd.read_csv(csv, index_col=0)
+    else:
+      return False
+
+  df.fillna(0, inplace=True)
+   
   vars = {}
   
   def register(name, value):
@@ -59,10 +67,10 @@ def prove(a, w, r, df=None):
 
   for i in range(5):
     for j in range(5):
-      register(f'Dp{i}{j}', vars.get(f'P{i}{j}2') * (vars.get('v1') - vars.get(f'P{j}{j}')))
+      register(f'Dp{i}{j}', vars.get(f'P{i}{j}2') * (vars.get('v1') - vars.get(f'P{j}{j}2')))
 
     for j in range(i):
-      register(f'Dm{i}{j}', vars.get(f'S{i}{j}2') * (vars.get('v1') - vars.get(f'P{j}{j}')))
+      register(f'Dm{i}{j}', vars.get(f'S{i}{j}2') * (vars.get('v1') - vars.get(f'P{j}{j}2')))
 
     register(f'T{i}12', (sum([vars.get(f'Dp{i}{j}') for j in range(5)]) - sum([vars.get(f'Dm{i}{j}') for j in range(i)]) - 1 * vars.get('v1')) * \
       (sum([vars.get(f'Dp{i}{j}') for j in range(5)]) - sum([vars.get(f'Dm{i}{j}') for j in range(i)]) - 2 * vars.get('v1'))) 
@@ -86,11 +94,7 @@ def prove(a, w, r, df=None):
   polys['o'] = fpoly1d(0)
 
   debug_polys = []
-
-  if df is None:
-    df = pd.read_csv('setup.csv', index_col=0)
-    df.fillna(0, inplace=True)
-      
+     
   for _, row in df.iterrows():
     variable, type, *coeffs = row 
     value = vars.get(variable)
@@ -100,40 +104,30 @@ def prove(a, w, r, df=None):
     poly *= value
     polys[type] += poly
 
-  count = 0
-  for i in range(1, 356):
-    eval = (polys['l']*polys['r'] - polys['o'])(i)
-    if eval:
-      print('/'*60)
-      print(i, eval)
-      print("Nonzero polynomials at the point:")
-      for p, var, t, v in debug_polys:
-        if p(i):
-          print('Var:', var, 'Type:', t, 'Value:', v, 'Eval:', p(i))
-      count += 1 
-  
-  if count:
-    print(count)
+  poly = polys['l'] * polys['r'] - polys['o']
+
+  t = fpoly1d([1, -1])
+  for i in range(2, 356):
+    t *= fpoly1d([1, -i])
+
+  h, q = poly / t
+
+  if q != fpoly1d(0):
+    print('/'*100)
+    print(f"Discrepancies found using a:{''.join([chr(l+97) for l in a])}, w:{''.join([chr(l+97) for l in w])} and r:{r}. Conflictive points:")
+    count = 0
+    for i in range(1, 356):
+      eval = poly(i)
+      if eval:
+        print('/'*100)
+        print(i, eval)
+        print("Nonzero polynomials at the point:")
+        for dp, var, t, v in debug_polys:
+          if dp(i):
+            print('Var:', var, 'Type:', t, 'Value:', v, 'Coeff:', dp(i))
+        count += 1 
+    print('Errors:', count)
     return False
+
   return True
-
-if __name__ == "__main__":
-  import sys
-
-  if len(sys.argv) < 4:
-    raise Exception("not enough arguments")
-  
-  a = [ord(l)-97 for l in sys.argv[1]]  
-  w = [ord(l)-97 for l in sys.argv[2]]
-  r = [int(l) for l in sys.argv[3]]
-  
-  prove(a, w, r)
-
-   
-
-   
-
-
-
-
 
