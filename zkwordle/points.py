@@ -230,6 +230,7 @@ def o_Pij(i, j):
 def l_Pij2(i, j):
   return [
     (266+5*i+j, 1),
+    (336+i, d(i, j)),
     (341+i, d(i, j)),
     (346+i, -d(i, j))
   ]

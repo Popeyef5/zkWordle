@@ -1,26 +1,26 @@
 #!/usr/bin/env python3
 
 from zkwordle.points import *
-from zkwordle.util import VariablePolynomial
+from zkwordle.util import VariablePolynomial, fpoly1d
 
-def setup(write=False):
+def setup(s=None, write=False):
 
   import pandas as pd
 
   polys = []
   
-  def import_var(name, points_l, points_r, points_o):
-    var = VariablePolynomial(name, 'l')
+  def import_var(name, points_l, points_r, points_o, visibility=VariablePolynomial.PRIVATE):
+    var = VariablePolynomial(name, 'l', visibility=visibility)
     var.set_values(points_l)
     var.interpolate()
     polys.append(var)
 
-    var = VariablePolynomial(name, 'r')
+    var = VariablePolynomial(name, 'r', visibility=visibility)
     var.set_values(points_r)
     var.interpolate()
     polys.append(var)
 
-    var = VariablePolynomial(name, 'o')
+    var = VariablePolynomial(name, 'o', visibility=visibility)
     var.set_values(points_o)
     var.interpolate()
     polys.append(var)
@@ -28,7 +28,7 @@ def setup(write=False):
   #a_ij
   for i in range(5):
     for j in range(5):
-      import_var(f'a{i}{j}', l_aij(i, j), r_aij(i, j), o_aij(i, j))
+      import_var(f'a{i}{j}', l_aij(i, j), r_aij(i, j), o_aij(i, j), VariablePolynomial.PUBLIC)
 
   #w_ij
   for i in range(5):
@@ -39,7 +39,7 @@ def setup(write=False):
 
   #r_i
   for i in range(5):
-    import_var(f'r{i}', l_ri(i), r_ri(i), o_ri(i))
+    import_var(f'r{i}', l_ri(i), r_ri(i), o_ri(i), VariablePolynomial.PUBLIC)
 
   #r_i2
   for i in range(5):
@@ -96,13 +96,25 @@ def setup(write=False):
   #v_one
   import_var('v1', l_v1(), r_v1(), o_v1())
 
-  df = pd.DataFrame() 
+  polys_df = pd.DataFrame() 
   for poly in polys:
-    row = pd.concat([pd.DataFrame({'name': poly.name, 'type': poly.type}, index=[0]), pd.DataFrame({f'{len(poly.poly.coeffs)-i}': poly.poly.coeffs[i] for i in range(len(poly.poly.coeffs))}, index=[0])], axis=1)
-    df = pd.concat([df, row], ignore_index=True)
+    row = pd.concat([pd.DataFrame({'name': poly.name, 'type': poly.type, 'visibility': poly.visibility}, index=[0]), pd.DataFrame({f'{len(poly.poly.coeffs)-i}': poly.poly.coeffs[i] for i in range(len(poly.poly.coeffs))}, index=[0])], axis=1)
+    polys_df = pd.concat([polys_df, row], ignore_index=True)
+
+  t = fpoly1d([1])
+  for i in range(1, 356):
+    t *= fpoly1d([1, -i])
+
+  if s is None:
+    s = 2425345345342434345234243523
+
+  prooving_df = pd.DataFrame({'s': s}, index=[0])
+  verifying_df = pd.DataFrame({'s': s, 't': t(s)}, index=[0])
 
   if write:
-    df.to_csv('setup.csv')
+    polys_df.to_csv('out/setup_polys.csv')
+    prooving_df.to_csv('out/prooving_key.csv')
+    verifying_df.to_csv('out/verifying_key.csv') 
 
-  return df      
+  return polys_df, prooving_df, verifying_df
 

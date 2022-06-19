@@ -1,21 +1,38 @@
 #!/usr/bin/env python3
 
-from zkwordle.util import fpoly1d
+from zkwordle.util import fpoly1d, VariablePolynomial
 
-def prove(a, w, r, df=None, csv=''):
+
+class MissingData(Exception):
+  pass
+
+
+class InvalidProof(Exception):
+  pass
+
+
+def prove(a, w, r, polys_df=None, proving_df=None, polys_csv='', proving_csv='', raise_exception=True, debug=False):
   import pandas as pd
 
   assert len(a) == 5
   assert len(w) == 5
   assert len(r) == 5
 
-  if df is None:
-    if csv:
-      df = pd.read_csv(csv, index_col=0)
+  if polys_df is None:
+    if polys_csv:
+      polys_df = pd.read_csv(polys_csv, index_col=0)
     else:
-      return False
+      raise MissingData("No pandas DataFrame or csv file was provided for the polynomial data. At least one of those two must be present to compute the proof")
+  
+  polys_df.fillna(0, inplace=True)
 
-  df.fillna(0, inplace=True)
+  if proving_df is None:
+    if proving_csv:
+      proving_df = pd.read_csv(proving_csv, index_col=0)
+    else:
+      raise MissingData("No pandas DataFrame or csv file was provided for the proving key. At least one of those two must be present to compute the proof")
+
+  s = proving_df['s'][0]
    
   vars = {}
   
@@ -88,46 +105,59 @@ def prove(a, w, r, df=None, csv=''):
     register(f'c{i}1', vars.get(f'rho{i}1') * (vars.get(f'Tp{i}') + vars.get(f'P{i}{i}2')))
     register(f'c{i}2', vars.get(f'rho{i}2') * (vars.get('v1') - vars.get(f'P{i}{i}2')))
 
-  polys = {}
-  polys['l'] = fpoly1d(0)
-  polys['r'] = fpoly1d(0)
-  polys['o'] = fpoly1d(0)
+  priv_polys = {'l': fpoly1d(0), 'r': fpoly1d(0), 'o':fpoly1d(0)}
+  pub_polys = {'l': fpoly1d(0), 'r': fpoly1d(0), 'o':fpoly1d(0)}
 
   debug_polys = []
+
+  proof = {}
      
-  for _, row in df.iterrows():
-    variable, type, *coeffs = row 
+  for _, row in polys_df.iterrows():
+    variable, type, visibility, *coeffs = row 
     value = vars.get(variable)
     coeffs = list(map(int, coeffs))
     poly = fpoly1d(coeffs)
     debug_polys.append((fpoly1d(poly), variable, type, value))
     poly *= value
-    polys[type] += poly
+    if visibility == VariablePolynomial.PRIVATE:
+      priv_polys[type] += poly
+    elif visibility == VariablePolynomial.PUBLIC:
+      pub_polys[type] += poly
+      proof[variable] = value
 
-  poly = polys['l'] * polys['r'] - polys['o']
+  proof['l'] = priv_polys['l'](s)
+  proof['r'] = priv_polys['r'](s)
+  proof['o'] = priv_polys['o'](s)
 
-  t = fpoly1d([1, -1])
-  for i in range(2, 356):
+  l = priv_polys['l'] + pub_polys['l']
+  r = priv_polys['r'] + pub_polys['r']
+  o = priv_polys['o'] + pub_polys['o']
+
+  poly = l * r - o
+
+  t = fpoly1d([1])
+  for i in range(1, 356):
     t *= fpoly1d([1, -i])
 
   h, q = poly / t
 
   if q != fpoly1d(0):
-    print('/'*100)
-    print(f"Discrepancies found using a:{''.join([chr(l+97) for l in a])}, w:{''.join([chr(l+97) for l in w])} and r:{r}. Conflictive points:")
     count = 0
     for i in range(1, 356):
       eval = poly(i)
       if eval:
-        print('/'*100)
-        print(i, eval)
-        print("Nonzero polynomials at the point:")
-        for dp, var, t, v in debug_polys:
-          if dp(i):
-            print('Var:', var, 'Type:', t, 'Value:', v, 'Coeff:', dp(i))
-        count += 1 
-    print('Errors:', count)
-    return False
+        count += 1
+        if debug:
+          print('/'*100)
+          print(i, eval)
+          print("Nonzero polynomials at the point:")
+          for dp, var, t, v in debug_polys:
+            if dp(i):
+              print('Var:', var, 'Type:', t, 'Value:', v, 'Coeff:', dp(i))
+    if raise_exception:
+      raise InvalidProof(f"Error while attempting to create proof. Found a total of {count} inconsistencies")
 
-  return True
+  proof['h'] = h(s)
+
+  return pd.DataFrame(proof, index=[0])
 

@@ -1,6 +1,6 @@
 import numpy as np
 
-p = 21888242871839275222246405745257275088548364400416034343698204186575808495617
+prime = 21888242871839275222246405745257275088548364400416034343698204186575808495617
 
 def mod_inv(x, p):
   x = x % p
@@ -39,9 +39,10 @@ def polydivmod(u, v, p):
 
   return q, r
 
+
 class fpoly1d:
   
-  def __init__(self, c,  prime=p):
+  def __init__(self, c,  prime=prime):
     self.prime = prime
     
     if isinstance(c, fpoly1d):
@@ -136,15 +137,22 @@ class fpoly1d:
 
 class VariablePolynomial:
 
-  def __init__(self, name='', type='l'):
+  PUBLIC = 0
+  PRIVATE = 1
+
+  def __init__(self, name='', type='l', visibility=None):
     self.name = name
     self.type = type
+    if visibility is None:
+      self.visibility = self.PRIVATE
+    else:
+      self.visibility = visibility
     self.x = np.arange(1, 356, dtype=object)
     self.y = np.zeros(355, dtype=object)
     self.poly = None
 
   def set_value(self, px, py):
-    self.y[px-1] = py % p
+    self.y[px-1] = py % prime
 
   def set_values(self, pts):
     for px, py in pts:
@@ -165,7 +173,6 @@ class VariablePolynomial:
   def print(self, all=False):
     print('-'*40)
     print(self.name, self.type)
-    #print('Differences:', np.any(self.y-self.poly(self.x)))
     print('-'*40)
     if self.poly is None:
       print("Polynomial not yet interpolated.")
