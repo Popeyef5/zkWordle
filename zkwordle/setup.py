@@ -1,34 +1,19 @@
-#!/usr/bin/env python3
-
 from zkwordle.points import *
-from zkwordle.util import VariablePolynomial, fpoly1d
+from zkwordle.util import Variable, fpoly1d, dump_json
 
 def setup(s=None, write=False):
-
-  import pandas as pd
-
-  polys = []
   
-  def import_var(name, points_l, points_r, points_o, visibility=VariablePolynomial.PRIVATE):
-    var = VariablePolynomial(name, 'l', visibility=visibility)
-    var.set_values(points_l)
-    var.interpolate()
-    polys.append(var)
-
-    var = VariablePolynomial(name, 'r', visibility=visibility)
-    var.set_values(points_r)
-    var.interpolate()
-    polys.append(var)
-
-    var = VariablePolynomial(name, 'o', visibility=visibility)
-    var.set_values(points_o)
-    var.interpolate()
-    polys.append(var)
+  vars = []
+  
+  def import_var(name, points_l, points_r, points_o, visibility=Variable.PRIVATE):
+    var = Variable(name=name, visibility=visibility)
+    var.set_polynomials(points_l, points_r, points_o)
+    vars.append(var)
 
   #a_ij
   for i in range(5):
     for j in range(5):
-      import_var(f'a{i}{j}', l_aij(i, j), r_aij(i, j), o_aij(i, j), VariablePolynomial.PUBLIC)
+      import_var(f'a{i}{j}', l_aij(i, j), r_aij(i, j), o_aij(i, j), Variable.PUBLIC)
 
   #w_ij
   for i in range(5):
@@ -39,7 +24,7 @@ def setup(s=None, write=False):
 
   #r_i
   for i in range(5):
-    import_var(f'r{i}', l_ri(i), r_ri(i), o_ri(i), VariablePolynomial.PUBLIC)
+    import_var(f'r{i}', l_ri(i), r_ri(i), o_ri(i), Variable.PUBLIC)
 
   #r_i2
   for i in range(5):
@@ -96,11 +81,6 @@ def setup(s=None, write=False):
   #v_one
   import_var('v1', l_v1(), r_v1(), o_v1())
 
-  polys_df = pd.DataFrame() 
-  for poly in polys:
-    row = pd.concat([pd.DataFrame({'name': poly.name, 'type': poly.type, 'visibility': poly.visibility}, index=[0]), pd.DataFrame({f'{len(poly.poly.coeffs)-i}': poly.poly.coeffs[i] for i in range(len(poly.poly.coeffs))}, index=[0])], axis=1)
-    polys_df = pd.concat([polys_df, row], ignore_index=True)
-
   t = fpoly1d([1])
   for i in range(1, 356):
     t *= fpoly1d([1, -i])
@@ -108,13 +88,13 @@ def setup(s=None, write=False):
   if s is None:
     s = 2425345345342434345234243523
 
-  prooving_df = pd.DataFrame({'s': s}, index=[0])
-  verifying_df = pd.DataFrame({'s': s, 't': t(s)}, index=[0])
+  proving_key = {'s': s}
+  verification_key = {'s': s, 't': t(s)}
 
   if write:
-    polys_df.to_csv('out/setup_polys.csv')
-    prooving_df.to_csv('out/prooving_key.csv')
-    verifying_df.to_csv('out/verifying_key.csv') 
+    dump_json([v.to_dict for v in vars], 'out/setup_polys.json')
+    dump_json(proving_key, 'out/proving_key.json')
+    dump_json(verification_key, 'out/verification_key.json')
 
-  return polys_df, prooving_df, verifying_df
+  return vars, proving_key, verification_key
 

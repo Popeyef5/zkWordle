@@ -1,22 +1,17 @@
-#!/usr/bin/env python3
-
-from zkwordle.util import fpoly1d, VariablePolynomial
+from zkwordle.util import fpoly1d, Variable
 
 
 class InvalidProof(Exception):
   pass
 
 
-def prove(a, w, r, polys_df, proving_df, raise_exception=True, debug=False):
-  import pandas as pd
+def prove(a, w, r, polys, proving_key, raise_exception=True, debug=False):
 
   assert len(a) == 5
   assert len(w) == 5
   assert len(r) == 5
 
-  polys_df.fillna(0, inplace=True)
-
-  s = proving_df['s'][0]
+  s = proving_key['s']
    
   vars = {}
   
@@ -96,18 +91,20 @@ def prove(a, w, r, polys_df, proving_df, raise_exception=True, debug=False):
 
   proof = {}
      
-  for _, row in polys_df.iterrows():
-    variable, type, visibility, *coeffs = row 
-    value = vars.get(variable)
-    coeffs = list(map(int, coeffs))
-    poly = fpoly1d(coeffs)
-    debug_polys.append((fpoly1d(poly), variable, type, value))
-    poly *= value
-    if visibility == VariablePolynomial.PRIVATE:
-      priv_polys[type] += poly
-    elif visibility == VariablePolynomial.PUBLIC:
-      pub_polys[type] += poly
-      proof[variable] = value
+  for item in polys:
+    value = vars.get(item.name)
+    
+    for type, coeffs in item.polys.items():
+      poly = fpoly1d(coeffs)
+      debug_polys.append((fpoly1d(poly), item.name, type, value))
+      poly *= value
+
+      if item.visibility == Variable.PRIVATE:
+        priv_polys[type] += poly
+      elif item.visibility == Variable.PUBLIC:
+        pub_polys[type] += poly
+        proof[item.name] = value
+    
 
   proof['l'] = priv_polys['l'](s)
   proof['r'] = priv_polys['r'](s)
@@ -117,13 +114,13 @@ def prove(a, w, r, polys_df, proving_df, raise_exception=True, debug=False):
   r = priv_polys['r'] + pub_polys['r']
   o = priv_polys['o'] + pub_polys['o']
 
-  poly = l * r - o
+  p = l * r - o
 
   t = fpoly1d([1])
   for i in range(1, 356):
     t *= fpoly1d([1, -i])
 
-  h, q = poly / t
+  h, q = p / t
 
   if q != fpoly1d(0):
     count = 0
@@ -143,5 +140,5 @@ def prove(a, w, r, polys_df, proving_df, raise_exception=True, debug=False):
 
   proof['h'] = h(s)
 
-  return pd.DataFrame(proof, index=[0])
+  return proof
 

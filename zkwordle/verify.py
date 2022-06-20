@@ -1,36 +1,28 @@
-#!usr/bin/env python3
+from zkwordle.util import Variable, fpoly1d, prime
 
-from zkwordle.util import VariablePolynomial, fpoly1d, prime
-
-def verify(polys_df, verifying_df, proof_df):
+def verify(setup_polys, verification_key, proof):
   
-  polys_df.fillna(0, inplace=True)
-  proof_df.fillna(0, inplace=True)
-
-  proof = {var: proof_df[var][0] for var in proof_df}
-
   polys = {
     'l': proof['l'],
     'r': proof['r'],
     'o': proof['o'],
     'h': proof['h'],
-    't': verifying_df['t'][0],
+    't': verification_key['t'],
   }
 
-  s = verifying_df['s'][0]
+  s = verification_key['s']
 
-  for _, row in polys_df.iterrows():
-    variable, type, visibility, *coeffs = row
-    if visibility == VariablePolynomial.PRIVATE:
+  for item in setup_polys:
+    if item.visibility == Variable.PRIVATE:
       continue
     try:
-      value = proof[variable]
+      value = proof[item.name]
     except KeyError:
       return False
-    coeffs = list(map(int, coeffs))
-    poly = fpoly1d(coeffs)
-    poly *= value
-    polys[type] += poly(s)
+    for type, coeffs in item.polys.items():
+      poly = fpoly1d(coeffs)
+      poly *= value
+      polys[type] += poly(s)
 
   if (polys['l'] * polys['r'] - polys['h'] * polys['t'] - polys['o']) % prime:
     return False

@@ -40,6 +40,12 @@ def polydivmod(u, v, p):
   return q, r
 
 
+def dump_json(obj, filename):
+  import json
+  with open(filename, 'w') as f:
+    json.dump(obj, filename, indent=6)
+
+
 class fpoly1d:
   
   def __init__(self, c,  prime=prime):
@@ -137,16 +143,7 @@ class fpoly1d:
 
 class VariablePolynomial:
 
-  PUBLIC = 0
-  PRIVATE = 1
-
-  def __init__(self, name='', type='l', visibility=None):
-    self.name = name
-    self.type = type
-    if visibility is None:
-      self.visibility = self.PRIVATE
-    else:
-      self.visibility = visibility
+  def __init__(self):
     self.x = np.arange(1, 356, dtype=object)
     self.y = np.zeros(355, dtype=object)
     self.poly = None
@@ -172,8 +169,6 @@ class VariablePolynomial:
 
   def print(self, all=False):
     print('-'*40)
-    print(self.name, self.type)
-    print('-'*40)
     if self.poly is None:
       print("Polynomial not yet interpolated.")
       return
@@ -183,4 +178,36 @@ class VariablePolynomial:
       elif self.y[i] or all:
         print(f"{self.x[i]}: {self.poly(self.x[i])}")
 
+
+class Variable:
+  
+  PUBLIC = 0
+  PRIVATE = 1
+
+  def __init__(self, name='', visibility=None):
+    self.name = name
+    self.visibility = visibility if visibility is not None else self.PRIVATE
+    self.polys = {}
+
+  def set_single_polynomial(self, type, points):
+    poly = VariablePolynomial()
+    poly.set_values(points)
+    poly.interpolate()
+    self.polys[type] = poly.poly.coeffs
+
+  def set_polynomials(self, points_l, points_r, points_o):
+    self.set_single_polynomial('l', points_l)
+    self.set_single_polynomial('r', points_r)
+    self.set_single_polynomial('o', points_o)
+
+  def to_dict(self):
+    return {
+      'name': self.name,
+      'visibility': self.visibility,
+      'polys': {
+        'l': self.polys.get('l'),
+        'r': self.polys.get('r'),
+        'o': self.polys.get('o'),
+      }
+    }
 
