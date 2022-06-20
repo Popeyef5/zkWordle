@@ -3,34 +3,18 @@
 from zkwordle.util import fpoly1d, VariablePolynomial
 
 
-class MissingData(Exception):
-  pass
-
-
 class InvalidProof(Exception):
   pass
 
 
-def prove(a, w, r, polys_df=None, proving_df=None, polys_csv='', proving_csv='', raise_exception=True, debug=False):
+def prove(a, w, r, polys_df, proving_df, raise_exception=True, debug=False):
   import pandas as pd
 
   assert len(a) == 5
   assert len(w) == 5
   assert len(r) == 5
 
-  if polys_df is None:
-    if polys_csv:
-      polys_df = pd.read_csv(polys_csv, index_col=0)
-    else:
-      raise MissingData("No pandas DataFrame or csv file was provided for the polynomial data. At least one of those two must be present to compute the proof")
-  
   polys_df.fillna(0, inplace=True)
-
-  if proving_df is None:
-    if proving_csv:
-      proving_df = pd.read_csv(proving_csv, index_col=0)
-    else:
-      raise MissingData("No pandas DataFrame or csv file was provided for the proving key. At least one of those two must be present to compute the proof")
 
   s = proving_df['s'][0]
    

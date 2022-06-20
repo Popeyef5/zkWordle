@@ -2,20 +2,8 @@
 
 from zkwordle.util import VariablePolynomial, fpoly1d, prime
 
-def verify(polys_df=None, verifying_df=None, proof_df=None, polys_csv='', verifying_csv='', proof_csv=''):
+def verify(polys_df, verifying_df, proof_df):
   
-  if polys_df is None:
-    if polys_csv:
-      polys_df = pd.read_csv(polys_csv, index_col=0) 
-    else:
-      return False
-
-  if proof_df is None:
-    if proof_csv:
-      proof_df = pd.read_csv(proof_csv, index_col=0) 
-    else:
-      return False
-
   polys_df.fillna(0, inplace=True)
   proof_df.fillna(0, inplace=True)
 
