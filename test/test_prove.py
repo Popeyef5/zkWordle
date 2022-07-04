@@ -36,7 +36,7 @@ class TestE2E(unittest.TestCase):
 
   @classmethod
   def setUpClass(cls):
-    cls.polys, cls.proving, cls.verifying = zk.setup() 
+    cls.proving, cls.verifying, cls.polys = zk.setup() 
 
   @settings(deadline=None) 
   @given(st.lists(st.integers(min_value=0, max_value=25), min_size=10, max_size=10)) 
@@ -44,18 +44,18 @@ class TestE2E(unittest.TestCase):
     a = s[0:5]
     w = s[5:10]
     r = wordle_truth(a, w)
-    proof = zk.prove(a, w, r, polys=self.polys, proving_key=self.proving)
-    res = zk.verify(setup_polys=self.polys, proof=proof, verification_key=self.verifying)
+    proof = zk.prove(a, w, r, self.proving, self.polys)
+    res = zk.verify(a, r, self.verifying, proof)
     self.assertEqual(res, True, 'LxR does not equal O')
 
-  @settings(deadline=None)
-  @given(invalid_args())
-  def test_revert_proof(self, s):
-    a = s[0:5]
-    w = s[5:10]
-    r = s[10:15]
-    with self.assertRaises(zk.InvalidProof, msg=f"No exception was raised for a={a}, w={w} and r={r}"):
-      zk.prove(a, w, r, polys=self.polys, proving_key=self.proving)
+  #@settings(deadline=None)
+  #@given(invalid_args())
+  #def test_revert_proof(self, s):
+  #  a = s[0:5]
+  #  w = s[5:10]
+  #  r = s[10:15]
+  #  with self.assertRaises(zk.InvalidProof, msg=f"No exception was raised for a={a}, w={w} and r={r}"):
+  #    zk.prove(a, w, r, self.proving, self.polys)
 
   @settings(deadline=None)
   @given(invalid_args())
@@ -63,8 +63,8 @@ class TestE2E(unittest.TestCase):
     a = s[0:5]
     w = s[5:10]
     r = s[10:15]
-    proof = zk.prove(a, w, r, polys=self.polys, proving_key=self.proving, raise_exception=False)
-    res = zk.verify(setup_polys=self.polys, proof=proof, verification_key=self.verifying)
+    proof = zk.prove(a, w, r, self.proving, self.polys)
+    res = zk.verify(a, r, self.verifying, proof)
     self.assertEqual(res, False, 'Verification algorithm passed for false proof.')
 
 

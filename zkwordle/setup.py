@@ -1,14 +1,68 @@
 from zkwordle.points import *
 from zkwordle.util import Variable, fpoly1d, dump_json
+from zkwordle.ecc import G1, G2
 
-def setup(s=None, write=False):
+
+class CRS:
   
-  vars = []
+  def __init__(self, s, rho_l, rho_r, a_l, a_r, a_o, beta, gamma):
+    self.s = s
+    self.rho_l, self.rho_r = rho_l, rho_r
+    self.rho_o = rho_l * rho_r
+    self.a_l, self.a_r, self.a_o = a_l, a_r, a_o
+    self.gamma = gamma
+    self.beta = beta
+
+    self.G1, self.G2 = G1, G2
+
+    self.Grho_l, self.Grho_r = rho_l * G1, rho_r * G1
+    self.Grho_ls, self.Grho_rs = a_l * self.rho_l, a_r * self.rho_r 
+    self.Grho_r2 = rho_r * G2
+    self.Grho_o = rho_r * self.rho_l
+    self.Grho_os = a_o * self.rho_o
+    self.Grho_o2 = (rho_l * rho_r) * G2
+
+  @classmethod
+  def random(cls):
+    return cls(1, 2, 3, 4, 5, 6, 7, 8)
+
+    
+def setup(crs=None):
+
+  if crs is None:
+    crs = CRS.random()
+
+  proving_key = {'l': {}, 'ls': {}, 'r': {}, 'rs': {}, 'o': {}, 'os': {}, 'k': {}, 'h': {}}
+  verification_key = {'l': {}}
+
+  polys = {}
   
   def import_var(name, points_l, points_r, points_o, visibility=Variable.PRIVATE):
     var = Variable(name=name, visibility=visibility)
     var.set_polynomials(points_l, points_r, points_o)
-    vars.append(var)
+   
+    polys[name] = {} 
+    polys[name]['l'] = var.polys['l'].poly
+    polys[name]['r'] = var.polys['r'].poly
+    polys[name]['o'] = var.polys['o'].poly
+   
+    l = var.evaluate('l', crs.s) 
+    r = var.evaluate('r', crs.s) 
+    o = var.evaluate('o', crs.s) 
+
+    proving_key['l'][name] = l * crs.Grho_l
+    proving_key['ls'][name] = l * crs.Grho_l
+    proving_key['r'][name] = r * crs.Grho_r2
+    proving_key['rs'][name] = r * crs.Grho_rs
+    proving_key['o'][name] = o * crs.Grho_o
+    proving_key['os'][name] = o * crs.Grho_os
+
+    proving_key['k'][name] = (crs.beta * (l * crs.rho_l + r * crs.rho_r + o * crs.rho_o)) * crs.G1
+
+    if visibility==Variable.PUBLIC:
+      proving_key['l'][name] = 0 * crs.Grho_l
+      proving_key['ls'][name] = 0 * crs.Grho_l
+      verification_key['l'][name] = l * crs.Grho_l
 
   #a_ij
   for i in range(5):
@@ -81,20 +135,20 @@ def setup(s=None, write=False):
   #v_one
   import_var('v1', l_v1(), r_v1(), o_v1())
 
+  for i in range(356):
+    proving_key['h'][i] = (crs.s ** i) * crs.G1
+
   t = fpoly1d([1])
   for i in range(1, 356):
     t *= fpoly1d([1, -i])
 
-  if s is None:
-    s = 2425345345342434345234243523
+  verification_key['t'] = (t(crs.s) * crs.rho_l * crs.rho_r) * crs.G2
+  verification_key['l'] = crs.a_l * crs.G2
+  verification_key['r'] = crs.a_r * crs.G1
+  verification_key['o'] = crs.a_o * crs.G2
+  verification_key['g'] = crs.gamma * crs.G2
+  verification_key['bg_1'] = (crs.gamma * crs.beta) * crs.G1
+  verification_key['bg_2'] = (crs.gamma * crs.beta) * crs.G2
 
-  proving_key = {'s': s}
-  verification_key = {'s': s, 't': t(s)}
-
-  if write:
-    dump_json([v.to_dict for v in vars], 'out/setup_polys.json')
-    dump_json(proving_key, 'out/proving_key.json')
-    dump_json(verification_key, 'out/verification_key.json')
-
-  return vars, proving_key, verification_key
+  return proving_key, verification_key, polys
 

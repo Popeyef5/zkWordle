@@ -1,23 +1,23 @@
-from zkwordle.util import fpoly1d, Variable
+from zkwordle.util import fpoly1d, Variable, inner
 
 
-class InvalidProof(Exception):
-  pass
-
-
-def prove(a, w, r, polys, proving_key, raise_exception=True, debug=False):
+def prove(a, w, r, proving_key, variable_polys):
 
   assert len(a) == 5
   assert len(w) == 5
   assert len(r) == 5
 
-  s = proving_key['s']
-   
   vars = {}
+  print('before generating empty polys')
+  polys = {'l': fpoly1d(0), 'r': fpoly1d(0), 'o': fpoly1d(0)}
   
   def register(name, value):
     vars[name] = value
+    polys['l'] += value * variable_polys[name]['l']
+    polys['r'] += value * variable_polys[name]['r']
+    polys['o'] += value * variable_polys[name]['o']
 
+  print('before registering variables values')
   register('v1', 1)
 
   for i in range(5):
@@ -84,35 +84,17 @@ def prove(a, w, r, polys, proving_key, raise_exception=True, debug=False):
     register(f'c{i}1', vars.get(f'rho{i}1') * (vars.get(f'Tp{i}') + vars.get(f'P{i}{i}2')))
     register(f'c{i}2', vars.get(f'rho{i}2') * (vars.get('v1') - vars.get(f'P{i}{i}2')))
 
-  priv_polys = {'l': fpoly1d(0), 'r': fpoly1d(0), 'o':fpoly1d(0)}
-  pub_polys = {'l': fpoly1d(0), 'r': fpoly1d(0), 'o':fpoly1d(0)}
-
-  debug_polys = []
-
-  proof = {}
-     
-  for item in polys:
-    value = vars.get(item.name)
-    
-    for type, coeffs in item.polys.items():
-      poly = fpoly1d(coeffs)
-      debug_polys.append((fpoly1d(poly), item.name, type, value))
-      poly *= value
-
-      if item.visibility == Variable.PRIVATE:
-        priv_polys[type] += poly
-      elif item.visibility == Variable.PUBLIC:
-        pub_polys[type] += poly
-        proof[item.name] = value
-    
-
-  proof['l'] = priv_polys['l'](s)
-  proof['r'] = priv_polys['r'](s)
-  proof['o'] = priv_polys['o'](s)
-
-  l = priv_polys['l'] + pub_polys['l']
-  r = priv_polys['r'] + pub_polys['r']
-  o = priv_polys['o'] + pub_polys['o']
+  print('before generating proof')
+  proof = {
+    'l': inner(vars, proving_key['l']),
+    'ls': inner(vars, proving_key['ls']),
+    'r': inner(vars, proving_key['r']),
+    'rs': inner(vars, proving_key['rs']),
+    'o': inner(vars, proving_key['o']),
+    'os': inner(vars, proving_key['os']),
+    'k': inner(vars, proving_key['k'])
+  }
+  print('before generating p')
 
   p = l * r - o
 
@@ -120,25 +102,12 @@ def prove(a, w, r, polys, proving_key, raise_exception=True, debug=False):
   for i in range(1, 356):
     t *= fpoly1d([1, -i])
 
+  print('before generating g')
+ 
   h, q = p / t
 
-  if q != fpoly1d(0):
-    count = 0
-    for i in range(1, 356):
-      eval = poly(i)
-      if eval:
-        count += 1
-        if debug:
-          print('/'*100)
-          print(i, eval)
-          print("Nonzero polynomials at the point:")
-          for dp, var, t, v in debug_polys:
-            if dp(i):
-              print('Var:', var, 'Type:', t, 'Value:', v, 'Coeff:', dp(i))
-    if raise_exception:
-      raise InvalidProof(f"Error while attempting to create proof. Found a total of {count} inconsistencies")
-
-  proof['h'] = h(s)
+  print('before appending h to proof')
+  proof['h'] = inner({i: h.coeffs[-1-i] for i in range(356)}, proving_key['h'])
 
   return proof
 

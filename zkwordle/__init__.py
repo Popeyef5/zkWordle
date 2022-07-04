@@ -1,4 +1,4 @@
 from .setup import setup
-from .prove import prove, InvalidProof
+from .prove import prove
 from .verify import verify
 

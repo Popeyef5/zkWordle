@@ -148,6 +148,11 @@ class VariablePolynomial:
     self.y = np.zeros(355, dtype=object)
     self.poly = None
 
+  def __call__(self, s):
+    if self.poly is None:
+      return None
+    return self.poly(s)
+
   def set_value(self, px, py):
     self.y[px-1] = py % prime
 
@@ -193,21 +198,37 @@ class Variable:
     poly = VariablePolynomial()
     poly.set_values(points)
     poly.interpolate()
-    self.polys[type] = poly.poly.coeffs
+    self.polys[type] = poly
 
   def set_polynomials(self, points_l, points_r, points_o):
     self.set_single_polynomial('l', points_l)
     self.set_single_polynomial('r', points_r)
     self.set_single_polynomial('o', points_o)
 
+  def evaluate(self, key, s):
+    if key not in self.polys:
+      return None
+    return self.polys[key](s)
+
   def to_dict(self):
     return {
       'name': self.name,
       'visibility': self.visibility,
       'polys': {
-        'l': self.polys.get('l'),
-        'r': self.polys.get('r'),
-        'o': self.polys.get('o'),
+        'l': self.polys.get('l').poly.coeffs,
+        'r': self.polys.get('r').poly.coeffs,
+        'o': self.polys.get('o').poly.coeffs,
       }
     }
+
+
+def inner(a, b):
+  ret = None
+  for key in a:
+    tmp = a[key] * b[key]
+    if ret is None:
+      ret = tmp
+    else:
+      ret += tmp
+  return ret
 
