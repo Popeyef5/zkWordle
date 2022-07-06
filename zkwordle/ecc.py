@@ -1,4 +1,4 @@
-from py_ecc.optimized_bn128 import add, multiply, neg, pairing, G1, G2
+from py_ecc.optimized_bn128 import add, multiply, neg, pairing, G1, G2, curve_order, field_modulus
 
 class GroupElement:
 

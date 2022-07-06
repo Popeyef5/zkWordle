@@ -1,7 +1,9 @@
 from zkwordle.util import fpoly1d, Variable, inner
+from zkwordle.ecc import curve_order
+import secrets
 
 
-def prove(a, w, r, proving_key, variable_polys):
+def prove(a, w, r, proving_key, variable_polys, deltas=None):
 
   assert len(a) == 5
   assert len(w) == 5
@@ -83,21 +85,28 @@ def prove(a, w, r, proving_key, variable_polys):
     register(f'c{i}1', vars.get(f'rho{i}1') * (vars.get(f'Tp{i}') + vars.get(f'P{i}{i}2')))
     register(f'c{i}2', vars.get(f'rho{i}2') * (vars.get('v1') - vars.get(f'P{i}{i}2')))
 
-  proof = {
-    'l': inner(vars, proving_key['l']),
-    'ls': inner(vars, proving_key['ls']),
-    'r': inner(vars, proving_key['r']),
-    'rs': inner(vars, proving_key['rs']),
-    'o': inner(vars, proving_key['o']),
-    'os': inner(vars, proving_key['os']),
-    'k': inner(vars, proving_key['k'])
-  }
+  if deltas is None:
+    deltas = {
+      'l': secrets.randbelow(curve_order),
+      'r': secrets.randbelow(curve_order),
+      'o': secrets.randbelow(curve_order)
+    }
 
-  p = polys['l'] * polys['r'] - polys['o']
+  proof = {
+    'l': inner(vars, proving_key['l']) + deltas['l'] * proving_key['lt'],
+    'ls': inner(vars, proving_key['ls']) + deltas['l'] * proving_key['lts'],
+    'r': inner(vars, proving_key['r']) + deltas['r'] * proving_key['rt'],
+    'rs': inner(vars, proving_key['rs']) + deltas['r'] * proving_key['rts'],
+    'o': inner(vars, proving_key['o']) + deltas['o'] * proving_key['ot'],
+    'os': inner(vars, proving_key['os']) + deltas['o'] * proving_key['ots'],
+    'k': inner(vars, proving_key['k']) + deltas['l'] * proving_key['ltb'] + deltas['r'] * proving_key['rtb'] + deltas['o'] * proving_key['otb']
+  }
 
   t = fpoly1d([1])
   for i in range(1, 356):
     t *= fpoly1d([1, -i])
+
+  p = (polys['l'] + deltas['l'] * t) * (polys['r'] + deltas['r'] * t) - polys['o'] - deltas['o'] * t
 
   h, q = p / t
 

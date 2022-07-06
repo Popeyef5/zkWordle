@@ -1,6 +1,7 @@
 import numpy as np
+from zkwordle.ecc import curve_order
 
-prime = 21888242871839275222246405745257275088548364400416034343698204186575808495617
+prime = curve_order
 
 def mod_inv(x, p):
   x = x % p

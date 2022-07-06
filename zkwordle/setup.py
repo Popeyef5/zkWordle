@@ -18,6 +18,7 @@ class CRS:
     self.Grho_l, self.Grho_r = rho_l * G1, rho_r * G1
     self.Grho_ls, self.Grho_rs = a_l * self.Grho_l, a_r * self.Grho_r 
     self.Grho_r2 = rho_r * G2
+    self.Grho_rs2 = self.a_r * self.Grho_r2
     self.Grho_o = rho_r * self.Grho_l
     self.Grho_os = a_o * self.Grho_o
     self.Grho_o2 = (rho_l * rho_r) * G2
@@ -142,7 +143,19 @@ def setup(crs=None):
   for i in range(1, 356):
     t *= fpoly1d([1, -i])
 
-  verification_key['t'] = (t(crs.s) * crs.rho_l * crs.rho_r) * crs.G2
+  t_s = t(crs.s)
+
+  proving_key['lt'] = t_s * crs.Grho_l
+  proving_key['rt'] = t_s * crs.Grho_r2
+  proving_key['ot'] = t_s * crs.Grho_o
+  proving_key['lts'] = t_s * crs.Grho_ls
+  proving_key['rts'] = t_s * crs.Grho_rs
+  proving_key['ots'] = t_s * crs.Grho_os
+  proving_key['ltb'] = t_s * crs.beta * crs.Grho_l
+  proving_key['rtb'] = t_s * crs.beta * crs.Grho_r
+  proving_key['otb'] = t_s * crs.beta * crs.Grho_o
+
+  verification_key['t'] = (t_s * crs.rho_l * crs.rho_r) * crs.G2
   verification_key['l'] = crs.a_l * crs.G2
   verification_key['r'] = crs.a_r * crs.G1
   verification_key['o'] = crs.a_o * crs.G2
