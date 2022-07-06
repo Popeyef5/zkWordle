@@ -10,7 +10,7 @@ def verify(a, r, verification_key, proof):
       vars[f'a{i}{j}'] = (a[i] >> j) & 1 
     vars[f'r{i}'] = r[i]
 
-  l_pub = inner(vars, verification_key['l'])
+  l_pub = inner(vars, verification_key['l_pub'])
 
   if not e(proof['l'], verification_key['l']) == e(proof['ls'], G2):
     return False

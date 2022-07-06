@@ -16,15 +16,15 @@ class CRS:
     self.G1, self.G2 = G1, G2
 
     self.Grho_l, self.Grho_r = rho_l * G1, rho_r * G1
-    self.Grho_ls, self.Grho_rs = a_l * self.rho_l, a_r * self.rho_r 
+    self.Grho_ls, self.Grho_rs = a_l * self.Grho_l, a_r * self.Grho_r 
     self.Grho_r2 = rho_r * G2
-    self.Grho_o = rho_r * self.rho_l
-    self.Grho_os = a_o * self.rho_o
+    self.Grho_o = rho_r * self.Grho_l
+    self.Grho_os = a_o * self.Grho_o
     self.Grho_o2 = (rho_l * rho_r) * G2
 
   @classmethod
   def random(cls):
-    return cls(1, 2, 3, 4, 5, 6, 7, 8)
+    return cls(1000, 2, 3, 4, 5, 6, 7, 8)
 
     
 def setup(crs=None):
@@ -33,7 +33,7 @@ def setup(crs=None):
     crs = CRS.random()
 
   proving_key = {'l': {}, 'ls': {}, 'r': {}, 'rs': {}, 'o': {}, 'os': {}, 'k': {}, 'h': {}}
-  verification_key = {'l': {}}
+  verification_key = {'l_pub': {}}
 
   polys = {}
   
@@ -51,7 +51,7 @@ def setup(crs=None):
     o = var.evaluate('o', crs.s) 
 
     proving_key['l'][name] = l * crs.Grho_l
-    proving_key['ls'][name] = l * crs.Grho_l
+    proving_key['ls'][name] = l * crs.Grho_ls
     proving_key['r'][name] = r * crs.Grho_r2
     proving_key['rs'][name] = r * crs.Grho_rs
     proving_key['o'][name] = o * crs.Grho_o
@@ -62,7 +62,7 @@ def setup(crs=None):
     if visibility==Variable.PUBLIC:
       proving_key['l'][name] = 0 * crs.Grho_l
       proving_key['ls'][name] = 0 * crs.Grho_l
-      verification_key['l'][name] = l * crs.Grho_l
+      verification_key['l_pub'][name] = l * crs.Grho_l
 
   #a_ij
   for i in range(5):
@@ -133,7 +133,7 @@ def setup(crs=None):
     import_var(f'c{i}2', l_ci2(i), r_ci2(i), o_ci2(i))
     
   #v_one
-  import_var('v1', l_v1(), r_v1(), o_v1())
+  import_var('v1', l_v1(), r_v1(), o_v1(), Variable.PUBLIC)
 
   for i in range(356):
     proving_key['h'][i] = (crs.s ** i) * crs.G1

@@ -8,7 +8,7 @@ def prove(a, w, r, proving_key, variable_polys):
   assert len(r) == 5
 
   vars = {}
-  print('before generating empty polys')
+  
   polys = {'l': fpoly1d(0), 'r': fpoly1d(0), 'o': fpoly1d(0)}
   
   def register(name, value):
@@ -17,7 +17,6 @@ def prove(a, w, r, proving_key, variable_polys):
     polys['r'] += value * variable_polys[name]['r']
     polys['o'] += value * variable_polys[name]['o']
 
-  print('before registering variables values')
   register('v1', 1)
 
   for i in range(5):
@@ -84,7 +83,6 @@ def prove(a, w, r, proving_key, variable_polys):
     register(f'c{i}1', vars.get(f'rho{i}1') * (vars.get(f'Tp{i}') + vars.get(f'P{i}{i}2')))
     register(f'c{i}2', vars.get(f'rho{i}2') * (vars.get('v1') - vars.get(f'P{i}{i}2')))
 
-  print('before generating proof')
   proof = {
     'l': inner(vars, proving_key['l']),
     'ls': inner(vars, proving_key['ls']),
@@ -94,20 +92,16 @@ def prove(a, w, r, proving_key, variable_polys):
     'os': inner(vars, proving_key['os']),
     'k': inner(vars, proving_key['k'])
   }
-  print('before generating p')
 
-  p = l * r - o
+  p = polys['l'] * polys['r'] - polys['o']
 
   t = fpoly1d([1])
   for i in range(1, 356):
     t *= fpoly1d([1, -i])
 
-  print('before generating g')
- 
   h, q = p / t
 
-  print('before appending h to proof')
-  proof['h'] = inner({i: h.coeffs[-1-i] for i in range(356)}, proving_key['h'])
+  proof['h'] = inner({i: h.coeffs[-1-i] for i in range(len(h.coeffs))}, proving_key['h'])
 
   return proof
 

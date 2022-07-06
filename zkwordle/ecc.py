@@ -1,4 +1,4 @@
-from py_ecc.bn128 import add, multiply, pairing, G1, G2
+from py_ecc.bn128 import add, multiply, neg, pairing, G1, G2
 
 class GroupElement:
 
@@ -12,12 +12,26 @@ class GroupElement:
 
   __radd__ = __add__
 
+  def __iadd__(self, other):
+    if not isinstance(other, type(self)):
+      return NotImplemented
+    self.pt = add(self.pt, other.pt)
+    return self 
+
   def __mul__(self, other):
     if not isinstance(other, int):
       return NotImplemented
-    return type(self)(multiply(self.pt, other))
+    ret = multiply(self.pt, abs(other))
+    if other < 0:
+      ret = neg(ret)
+    return type(self)(ret)
 
   __rmul__ = __mul__
+
+  def __eq__(self, other):
+    if not isinstance(other, type(self)):
+      return False
+    return self.pt == other.pt
 
 
 class bn128(GroupElement):
@@ -26,12 +40,9 @@ class bn128(GroupElement):
 class bn128_2(GroupElement):
   pass
 
-class bn128_12(GroupElement):
-  pass
-
 
 def e(p1, p2):
-  return bn128_12(pairing(p2.pt, p1.pt))
+  return pairing(p2.pt, p1.pt)
 
 
 G1 = bn128(G1)
