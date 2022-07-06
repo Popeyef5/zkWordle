@@ -1,4 +1,4 @@
-from py_ecc.bn128 import add, multiply, neg, pairing, G1, G2
+from py_ecc.optimized_bn128 import add, multiply, neg, pairing, G1, G2
 
 class GroupElement:
 
