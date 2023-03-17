@@ -1,5 +1,6 @@
 import numpy as np
 from zkwordle.ecc import curve_order
+from zkwordle.points import R1CS_LENGTH
 
 prime = curve_order
 
@@ -14,7 +15,7 @@ def mod_inv(x, p):
     t, nt = nt, t - q * nt
     r, nr = nr, r - q * nr
   if r != 1:
-    raise ValeError("number has no inverse")
+    raise ValueError("number has no inverse")
   return t % p
 
 
@@ -43,8 +44,23 @@ def polydivmod(u, v, p):
 
 def dump_json(obj, filename):
   import json
+
+  class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return obj.toJSON()
+
   with open(filename, 'w') as f:
-    json.dump(obj, filename, indent=6)
+    json.dump(obj, f, indent=6, cls=NumpyEncoder)
+
+
+def load_json(filename):
+  import json
+
+  with open(filename, 'r') as f:
+      ret = json.load(f)
+  return ret
 
 
 class fpoly1d:
@@ -59,6 +75,9 @@ class fpoly1d:
     c = np.atleast_1d(c).astype(object)
     c = np.trim_zeros(c, 'f')
     self.coeffs = np.mod(c, self.prime)
+
+  def toJSON(self):
+    return self.__dict__
 
   def __call__(self, val):
     y = 0
@@ -145,8 +164,8 @@ class fpoly1d:
 class VariablePolynomial:
 
   def __init__(self):
-    self.x = np.arange(1, 356, dtype=object)
-    self.y = np.zeros(355, dtype=object)
+    self.x = np.arange(1, R1CS_LENGTH + 1, dtype=object)
+    self.y = np.zeros(R1CS_LENGTH, dtype=object)
     self.poly = None
 
   def __call__(self, s):
@@ -155,7 +174,10 @@ class VariablePolynomial:
     return self.poly(s)
 
   def set_value(self, px, py):
-    self.y[px-1] = py % prime
+    value = py % prime
+    if value == 0:
+      return
+    self.y[px-1] = value
 
   def set_values(self, pts):
     for px, py in pts:
@@ -178,7 +200,7 @@ class VariablePolynomial:
     if self.poly is None:
       print("Polynomial not yet interpolated.")
       return
-    for i in range(355):
+    for i in range(R1CS_LENGTH):
       if self.y[i] - self.poly(self.x[i]):
         print(f"Unexpected discrepancy at x={self.x[i]}. Expected value: {self.y[i]}. Interpolated value: {self.poly(self.x[i])}.")
       elif self.y[i] or all:
@@ -222,6 +244,15 @@ class Variable:
       }
     }
 
+  @classmethod
+  def from_polys(cls, polys, name='', visibility=None):
+    ret = cls(name, visibility)
+    for type, poly in polys.items():
+      tmp = VariablePolynomial()
+      tmp.poly = poly
+      ret.polys[type] = tmp
+    return ret
+
 
 def inner(a, b):
   ret = None
@@ -232,4 +263,5 @@ def inner(a, b):
     else:
       ret += tmp
   return ret
+
 

@@ -1,7 +1,8 @@
 from zkwordle.points import *
-from zkwordle.util import Variable, fpoly1d, dump_json
+from zkwordle.util import Variable, fpoly1d, dump_json, load_json
 from zkwordle.ecc import G1, G2
 
+import time
 
 class CRS:
   
@@ -25,11 +26,11 @@ class CRS:
 
   @classmethod
   def random(cls):
-    return cls(1000, 2, 3, 4, 5, 6, 7, 8)
+    return cls(2000, 2, 3, 4, 5, 6, 7, 8)
 
     
-def setup(crs=None):
-
+def setup(crs=None, load_polys=None, save_polys=None):
+  st = time.monotonic()
   if crs is None:
     crs = CRS.random()
 
@@ -37,15 +38,25 @@ def setup(crs=None):
   verification_key = {'l_pub': {}}
 
   polys = {}
+  if load_polys is not None:
+    data = load_json(load_polys)
+    for name in data:
+      polys[name] = {}
+      for type, poly_dict in data[name].items():
+        polys[name][type] = fpoly1d(poly_dict["coeffs"], poly_dict["prime"])
+
   
   def import_var(name, points_l, points_r, points_o, visibility=Variable.PRIVATE):
-    var = Variable(name=name, visibility=visibility)
-    var.set_polynomials(points_l, points_r, points_o)
+    if name in polys:
+      var = Variable.from_polys(polys[name], name, visibility)
+    else:
+      var = Variable(name=name, visibility=visibility)
+      var.set_polynomials(points_l, points_r, points_o)
    
-    polys[name] = {} 
-    polys[name]['l'] = var.polys['l'].poly
-    polys[name]['r'] = var.polys['r'].poly
-    polys[name]['o'] = var.polys['o'].poly
+      polys[name] = {} 
+      polys[name]['l'] = var.polys['l'].poly
+      polys[name]['r'] = var.polys['r'].poly
+      polys[name]['o'] = var.polys['o'].poly
    
     l = var.evaluate('l', crs.s) 
     r = var.evaluate('r', crs.s) 
@@ -132,15 +143,102 @@ def setup(crs=None):
     import_var(f'c{i}0', l_ci0(i), r_ci0(i), o_ci0(i))
     import_var(f'c{i}1', l_ci1(i), r_ci1(i), o_ci1(i))
     import_var(f'c{i}2', l_ci2(i), r_ci2(i), o_ci2(i))
-    
+
+  #W
+  import_var('Wx', l_Wx(), r_Wx(), o_Wx(), Variable.PUBLIC)
+  import_var('Wy', l_Wy(), r_Wy(), o_Wy(), Variable.PUBLIC)
+
+  #b_mnl
+  for q in range(63):
+    m, n = q // 50, q % 50
+    for l in range(4):
+      import_var(f'b{m}{n}{l}', l_bmnl(m, n, l), r_bmnl(m, n, l), o_bmnl(m, n, l))
+
+  #bl&_mn
+  for q in range(63):
+    m, n = q // 50, q % 50
+    import_var(f'bl&{m}{n}', l_blJmn(m, n), r_blJmn(m, n), o_blJmn(m, n))
+  
+  #bc&_mn
+  for q in range(63):
+    m, n = q // 50, q % 50
+    import_var(f'bc&{m}{n}', l_bcJmn(m, n), r_bcJmn(m, n), o_bcJmn(m, n))
+  
+  #bu&_mn
+  for q in range(63):
+    m, n = q // 50, q % 50
+    import_var(f'bu&{m}{n}', l_buJmn(m, n), r_buJmn(m, n), o_buJmn(m, n))
+  
+  #b&_mn
+  for q in range(63):
+    m, n = q // 50, q % 50
+    import_var(f'b&{m}{n}', l_bJmn(m, n), r_bJmn(m, n), o_bJmn(m, n))
+ 
+  #ys_mn
+  for q in range(63):
+    m, n = q // 50, q % 50
+    import_var(f'ys{m}{n}', l_ysmn(m, n), r_ysmn(m, n), o_ysmn(m, n))
+
+  #Q_mn
+  import_var('Q00x', l_Qmnx(0, 0), r_Qmnx(0, 0), o_Qmnx(0, 0))
+  for q in range(1, 63):
+    m, n = q // 50, q % 50
+    import_var(f'Q{m}{n}x', l_Qmnx(m, n), r_Qmnx(m, n), o_Qmnx(m, n))
+    import_var(f'Q{m}{n}y', l_Qmny(m, n), r_Qmny(m, n), o_Qmny(m, n))
+
+  #LQ_mn
+  for q in range(1, 63):
+    m, n = q // 50, q % 50
+    import_var(f'LQ{m}{n}', l_LQmn(m, n), r_LQmn(m, n), o_LQmn(m, n))
+ 
+  #W_ij
+  for i in range(5):
+    for j in range(5):
+      import_var(f'W{i}{j}x', l_Wijx(i, j), r_Wijx(i, j), o_Wijx(i, j))
+      import_var(f'W{i}{j}x2', l_Wijx2(i, j), r_Wijx2(i, j), o_Wijx2(i, j))
+      import_var(f'W{i}{j}y', l_Wijy(i, j), r_Wijy(i, j), o_Wijy(i, j))
+
+  #V_ij
+  for i in range(5):
+    for j in range(5):
+      import_var(f'V{i}{j}x', l_Vijx(i, j), r_Vijx(i, j), o_Vijx(i, j))
+      import_var(f'V{i}{j}y', l_Vijy(i, j), r_Vijy(i, j), o_Vijy(i, j))
+  
+  #Ww_ij  
+  for i in range(5):
+    for j in range(5):
+      import_var(f'Ww{i}{j}x', l_Wwijx(i, j), r_Wwijx(i, j), o_Wwijx(i, j))
+      import_var(f'Ww{i}{j}y', l_Wwijy(i, j), r_Wwijy(i, j), o_Wwijy(i, j))
+
+  #LD_ij
+  for i in range(5):
+    for j in range(5):
+      import_var(f'LD{i}{j}', l_LDij(i, j), r_LDij(i, j), o_LDij(i, j)) 
+
+  #LA_ij
+  for i in range(5):
+    for j in range(5):
+      import_var(f'LA{i}{j}', l_LAij(i, j), r_LAij(i, j), o_LAij(i, j)) 
+
+  #LAw_ij
+  for i in range(5):
+    for j in range(5):
+      import_var(f'LAw{i}{j}', l_LAwij(i, j), r_LAwij(i, j), o_LAwij(i, j)) 
+
+  #LW
+  import_var('LW', l_LW(), r_LW(), o_LW())
+
   #v_one
   import_var('v1', l_v1(), r_v1(), o_v1(), Variable.PUBLIC)
 
-  for i in range(356):
+  for i in range(R1CS_LENGTH+1):
     proving_key['h'][i] = (crs.s ** i) * crs.G1
 
+  if save_polys is not None:
+    dump_json(polys, save_polys)
+  
   t = fpoly1d([1])
-  for i in range(1, 356):
+  for i in range(1, R1CS_LENGTH+1):
     t *= fpoly1d([1, -i])
 
   t_s = t(crs.s)
@@ -162,6 +260,9 @@ def setup(crs=None):
   verification_key['g'] = crs.gamma * crs.G2
   verification_key['bg_1'] = (crs.gamma * crs.beta) * crs.G1
   verification_key['bg_2'] = (crs.gamma * crs.beta) * crs.G2
+
+  et = time.monotonic()
+  print(f"Finished setup in {et-st}s.")
 
   return proving_key, verification_key, polys
 

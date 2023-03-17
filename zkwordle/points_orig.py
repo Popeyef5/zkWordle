@@ -5,7 +5,7 @@ from zkwordle.pedersen import xl, yl
 def d(x, y):
   return 1 if x == y else 0
 
-R1CS_LENGTH = 1110
+R1CS_LENGTH = 355
 #R1CS_LENGTH = 1110
 
 def l_aij(i, j):
@@ -65,10 +65,10 @@ def l_wij(i, j):
     ret.append((116+i+5*q, d(j, 2)))
 
   ret += [
-    (1102-(5*i+j)*10, bjj.Gx),
-    (1103-(5*i+j)*10, 1),
-    (1104-(5*i+j)*10, 1),
-    (1105-(5*i+j)*10, 1)
+    (1102-(5*i-j)*10, bjj.Gx),
+    (1103-(5*i-j)*10, 1),
+    (1104-(5*i-j)*10, 1),
+    (1105-(5*i-j)*10, 1)
   ]
   
   return ret
@@ -93,8 +93,8 @@ def r_wij(i, j):
 def o_wij(i, j):
   return [
     (26+5*i+j, 1),
-    (1102-(5*i+j)*10, bjj.Gy),
-    (1106-(5*i+j)*10, bjj.Gx)
+    (1102-(5*i-j)*10, bjj.Gy),
+    (1106-(5*i-j)*10, bjj.Gx)
   ]
 
 
@@ -1035,9 +1035,11 @@ def r_v1():
 def o_v1():
   ret = []
 
-  for q in range(63):
-    m, n = q // 50, q % 50
-    ret.append((673+(50*m+n-1)*3, xl(m, n, 1)*(1-d(q, 0))))
+  for q in range(50):
+    ret.append((673+(q-1)*3, xl(0, q, 1)*(1-d(q, 0))))
+
+  for q in range(13):
+    ret.append((673+(50+q-1)*3, xl(0, q, 1)))
 
   for q in range(25):
     ret.append((859+10*q, bjj.a))

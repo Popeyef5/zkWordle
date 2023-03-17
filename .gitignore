@@ -3,3 +3,5 @@ __pycache__/
 *.swp
 .hypothesis/
 tmp.*
+.vscode/
+.pytest_cache/
