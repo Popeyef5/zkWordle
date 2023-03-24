@@ -1,5 +1,5 @@
-from zkwordle.util import Variable, fpoly1d, inner
-from zkwordle.ecc import e, G2
+from zkwordle.util import inner
+from zkwordle.ecc.bn128 import e, G2
 
 def verify(a, W, r, verification_key, proof):
   print("Starting verification")

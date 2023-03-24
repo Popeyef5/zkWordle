@@ -5,8 +5,7 @@ from zkwordle.pedersen import xl, yl
 def d(x, y):
   return 1 if x == y else 0
 
-R1CS_LENGTH = 1110
-#R1CS_LENGTH = 1110
+R1CS_LENGTH = 1320
 
 def l_aij(i, j):
   ret = [(1+5*i+j, 1)]
@@ -63,13 +62,6 @@ def l_wij(i, j):
   for q in range(5):
     ret.append((91+i+5*q, d(j, 0)))
     ret.append((116+i+5*q, d(j, 2)))
-
-  ret += [
-    (1102-(5*i+j)*10, bjj.Gx),
-    (1103-(5*i+j)*10, 1),
-    (1104-(5*i+j)*10, 1),
-    (1105-(5*i+j)*10, 1)
-  ]
   
   return ret
 
@@ -87,14 +79,20 @@ def r_wij(i, j):
     ret.append((116+i+5*q, d(j, 3)))
     ret.append((166+i+5*q, d(j, 4)))
 
+  ret += [
+    (1309-11*(5*i+j), bjj.Gx*(1-d(i, 4)*d(j, 4))),
+    (1310-11*(5*i+j), (bjj.Gy-1)*(1-d(i, 4)*d(j, 4))),
+    (1312-11*(5*i+j), (bjj.Gx + bjj.Gy -1)*(1-d(i, 4)*d(j, 4)))
+  ]
+
   return ret
 
 
 def o_wij(i, j):
   return [
     (26+5*i+j, 1),
-    (1102-(5*i+j)*10, bjj.Gy),
-    (1106-(5*i+j)*10, bjj.Gx)
+    (1049, bjj.Gx*d(i, 4)*d(j, 4)),
+    (1050, (bjj.Gy-1)*d(i, 4)*d(j, 4))
   ]
 
 
@@ -556,9 +554,7 @@ def l_bmnl(m, n, l):
     (356+50*m+n, d(l, 0)),
     (419+50*m+n, d(l, 0)),
     (482+50*m+n, d(l, 1)),
-    (608+50*m+n, (yl(m, n, 2)-yl(m, n, 1))*d(l, 0) + (yl(m, n, 3)-yl(m, n, 1))*d(l, 1) + (yl(m, n, 5)-yl(m, n, 1))*d(l, 2)),
-    (671, ((xl(0, 0, 2)-xl(0, 0, 1))*d(l, 0) + (xl(0, 0, 3)-xl(0, 0, 1))*d(l, 1) + (xl(0, 0, 5)-xl(0, 0, 1))*d(l, 2))*d(m, 0)*d(n, 0)),
-    (672+(50*m+n-1)*3, ((xl(m, n, 2)-xl(m, n, 1))*d(l, 0) + (xl(m, n, 3)-xl(m, n, 1))*d(l, 1) + (xl(m, n, 5)-xl(m, n, 1))*d(l, 2))*(1-d(m, 0)*d(n, 0)))
+    (608+50*m+n, (xl(m, n, 2)-xl(m, n, 1))*d(l, 0) + (xl(m, n, 3)-xl(m, n, 1))*d(l, 1) + (xl(m, n, 5)-xl(m, n, 1))*d(l, 2)),
   ]
 
 
@@ -568,378 +564,206 @@ def r_bmnl(m, n, l):
     (419+50*m+n, d(l, 2)),
     (482+50*m+n, d(l, 2)),
     (545+50*m+n, d(l, 2)),
-    (608+50*m+n, -2*d(l, 3))
+    (608+50*m+n, -2*d(l, 3)),
+    (672+(50*m+n)*6, (yl(m, n, 2)-yl(m, n, 1))*d(l, 0) + (yl(m, n, 3)-yl(m, n, 1))*d(l, 1) + (yl(m, n, 5)-yl(m, n, 1))*d(l, 2)),
+    (674+(50*m+n)*6, (yl(m, n, 2)-yl(m, n, 1))*d(l, 0) + (yl(m, n, 3)-yl(m, n, 1))*d(l, 1) + (yl(m, n, 5)-yl(m, n, 1))*d(l, 2)),
   ]
 
 
 def o_bmnl(m, n, l):
   return [
-    (673+(50*m+n-1)*3, ((xl(m, n, 2)-xl(m, n, 1))*d(l, 0) + (xl(m, n, 3)-xl(m, n, 1))*d(l, 1) + (xl(m, n, 5)-xl(m, n, 1))*d(l, 2))*(1-d(m, 0)*d(n, 0)))
   ] 
 
 
 def l_blJmn(m, n):
   return [
     (545+50*m+n, 1),
-    (608+50*m+n, yl(m, n, 4)-yl(m, n, 3)-yl(m, n, 2)+yl(m, n, 1)),
-    (671, (xl(0, 0, 4)-xl(0, 0, 3)-xl(0, 0,2)+xl(0, 0, 1))*d(m ,0)*d(n, 0)),
-    (672+(50*m+n-1)*3, (xl(m, n, 4)-xl(m, n, 3)-xl(m, n, 2)+xl(m, n, 1))*(1-d(m, 0)*d(n, 0)))
+    (608+50*m+n, xl(m, n, 4)-xl(m, n, 3)-xl(m, n, 2)+xl(m, n, 1)),
   ]
 
 
 def r_blJmn(m, n):
-  return []
+  return [
+    (672+(50*m+n)*6, yl(m, n, 4)-yl(m, n, 3)-yl(m, n, 2)+yl(m, n, 1)),
+    (674+(50*m+n)*6, yl(m, n, 4)-yl(m, n, 3)-yl(m, n, 2)+yl(m, n, 1)),
+  ]
 
 
 def o_blJmn(m, n):
   return [
     (356+50*m+n, 1),
-    (673+(50*m+n-1)*3, (xl(m, n, 4)-xl(m, n, 3)-xl(m, n, 2)+xl(m, n, 1))*(1-d(m, 0)*d(n, 0)))
   ]
    
 
 def l_bcJmn(m, n):
   return [
-    (608+50*m+n, yl(m, n, 6)-yl(m, n, 5)-yl(m, n, 2)+yl(m, n, 1)),
-    (671, (xl(0, 0, 6)-xl(0, 0, 5)-xl(0, 0,2)+xl(0, 0, 1))*d(m ,0)*d(n, 0)),
-    (672+(50*m+n-1)*3, (xl(m, n, 6)-xl(m, n, 5)-xl(m, n, 2)+xl(m, n, 1))*(1-d(m, 0)*d(n, 0)))
+    (608+50*m+n, xl(m, n, 6)-xl(m, n, 5)-xl(m, n, 2)+xl(m, n, 1)),
   ]
 
 
 def r_bcJmn(m, n):
-  return []
+  return [
+    (672+(50*m+n)*6, yl(m, n, 6)-yl(m, n, 5)-yl(m, n, 2)+yl(m, n, 1)),
+    (674+(50*m+n)*6, yl(m, n, 6)-yl(m, n, 5)-yl(m, n, 2)+yl(m, n, 1)),
+  ]
 
 
 def o_bcJmn(m, n):
   return [
     (419+50*m+n, 1),
-    (673+(50*m+n-1)*3, (xl(m, n, 6)-xl(m, n, 5)-xl(m, n, 2)+xl(m, n, 1))*(1-d(m, 0)*d(n, 0)))
   ]
  
 
 def l_buJmn(m, n):
   return [
-    (608+50*m+n, yl(m, n, 7)-yl(m, n, 5)-yl(m, n, 3)+yl(m, n, 1)),
-    (671, (xl(0, 0, 7)-xl(0, 0, 5)-xl(0, 0,3)+xl(0, 0, 1))*d(m ,0)*d(n, 0)),
-    (672+(50*m+n-1)*3, (xl(m, n, 7)-xl(m, n, 5)-xl(m, n, 3)+xl(m, n, 1))*(1-d(m, 0)*d(n, 0)))
+    (608+50*m+n, xl(m, n, 7)-xl(m, n, 5)-xl(m, n, 3)+xl(m, n, 1)),
   ]
 
 
 def r_buJmn(m, n):
-  return []
+  return [
+    (672+(50*m+n)*6, yl(m, n, 7)-yl(m, n, 5)-yl(m, n, 3)+yl(m, n, 1)),
+    (674+(50*m+n)*6, yl(m, n, 7)-yl(m, n, 5)-yl(m, n, 3)+yl(m, n, 1)),
+  ]
 
 
 def o_buJmn(m, n):
   return [
     (482+50*m+n, 1),
-    (673+(50*m+n-1)*3, (xl(m, n, 7)-xl(m, n, 5)-xl(m, n, 3)+xl(m, n, 1))*(1-d(m, 0)*d(n, 0)))
   ]
  
 
 def l_bJmn(m, n):
   return [
-    (608+50*m+n, yl(m, n, 8)-yl(m, n, 7)-yl(m, n, 6)+yl(m, n, 5)-yl(m, n, 4)+yl(m, n, 3)+yl(m, n, 2)-yl(m, n, 1)),
-    (671, (xl(0, 0, 8)-xl(0, 0, 7)-xl(0, 0, 6)+xl(0, 0, 5)-xl(m, n, 4)+xl(0, 0, 3)+xl(0, 0, 2)-xl(0, 0, 1))*d(m ,0)*d(n, 0)),
-    (672+(50*m+n-1)*3, (xl(m, n, 8)-xl(m, n, 7)-xl(m, n, 6)+xl(m, n, 5)-xl(m, n, 4)+xl(m, n, 3)+xl(m, n, 2)-xl(m, n, 1))*(1-d(m, 0)*d(n, 0)))
+    (608+50*m+n, xl(m, n, 8)-xl(m, n, 7)-xl(m, n, 6)+xl(m, n, 5)-xl(m, n, 4)+xl(m, n, 3)+xl(m, n, 2)-xl(m, n, 1)),
   ]
 
 
 def r_bJmn(m, n):
-  return []
+  return [
+    (672+(50*m+n)*6, yl(m, n, 8)-yl(m, n, 7)-yl(m, n, 6)+yl(m, n, 5)-yl(m, n, 4)+yl(m, n, 3)+yl(m, n, 2)-yl(m, n, 1)),
+    (674+(50*m+n)*6, yl(m, n, 8)-yl(m, n, 7)-yl(m, n, 6)+yl(m, n, 5)-yl(m, n, 4)+yl(m, n, 3)+yl(m, n, 2)-yl(m, n, 1)),
+  ]
 
 
 def o_bJmn(m, n):
   return [
     (545+50*m+n, 1),
-    (673+(50*m+n-1)*3, (xl(m, n, 8)-xl(m, n, 7)-xl(m, n, 6)+xl(m, n, 5)-xl(m, n, 4)+xl(m, n, 3)+xl(m, n, 2)-xl(m, n, 1))*(1-d(m, 0)*d(n, 0)))
   ]
 
 
-def l_ysmn(m, n):
-  return []
+def l_Rmnx(m, n):
+  return [
+  ]
 
 
-def r_ysmn(m, n):
-  return []
+def r_Rmnx(m, n):
+  return [
+    (671+6*(50*m+n), 1),
+    (674+6*(50*m+n), 1),
+  ]
 
 
-def o_ysmn(m, n):
+def o_Rmnx(m, n):
   return [
     (608+50*m+n, 1),
-    (672, -d(m, 0)*d(n, 0)),
-    (672+(50*m+n-1)*3, 1-d(m, 0)*d(n, 0)),
-    (674, d(m, 0)*d(n, 0))
   ]
 
 
-def l_LQmn(m, n):
+def l_QRxmn(m, n):
   return [
-    (673+(50*m+n-1)*3, 1),
-    (674+(50*m+n-1)*3, 1)
+    (673+6*(50*m+n), bjj.JUBJUB_D.s),
   ]
 
 
-def r_LQmn(m, n):
-  return [
-    (672+(50*m+n-1)*3, 1),
-    (673+(50*m+n-1)*3, 1)
-  ]
-
-
-def o_LQmn(m, n):
-  return []
-
- 
-def l_LDij(i, j):
-  return [
-    (859+(5*i+j)*10, 1),
-    (860+(5*i+j)*10, 1),
-    (861+(5*i+j)*10, 1)
-  ]
-
-
-def r_LDij(i, j):
-  return [
-    (860+(5*i+j)*10, 1)
-  ]
-
-
-def o_LDij(i, j):
-  return []
-
- 
-def l_LAij(i, j):
+def r_QRxmn(m, n):
   return []
 
 
-def r_LAij(i, j):
+def o_QRxmn(m, n):
   return [
-    (862+(5*i+j)*10, 1),
-    (863+(5*i+j)*10, 1),
-    (866+(5*i+j)*10, 1)
+    (671+6*(50*m+n), 1),
+    (675+6*(50*m+n), -1),
+    (676+6*(50*m+n), -bjj.JUBJUB_A.s),
   ]
 
 
-def o_LAij(i, j):
-  return []
-
- 
-def l_LAwij(i, j):
-  return [
-    (866+(5*i+j)*10, 1),
-    (867+(5*i+j)*10, 1)
-  ]
-
-
-def r_LAwij(i, j):
+def l_QRymn(m, n):
   return []
 
 
-def o_LAwij(i, j):
+def r_QRymn(m, n):
   return [
-    (863+(5*i+j)*10, 1)
+    (673+6*(50*m+n), 1),
   ]
 
- 
-def l_Wijx2(i, j):
+
+def o_QRymn(m, n):
+  return [
+    (672+6*(50*m+n), 1),
+    (675+6*(50*m+n), -1),
+    (676+6*(50*m+n), 1),
+  ]
+
+
+def l_QRdmn(m, n):
   return []
 
 
-def r_Wijx2(i, j):
+def r_QRdmn(m, n):
+  return [
+    (675+6*(50*m+n), 1),
+    (676+6*(50*m+n), -1),
+  ]
+
+
+def o_QRdmn(m, n):
+  return [
+    (673+6*(50*m+n), 1),
+  ]
+
+
+def l_QRsmn(m, n):
   return []
 
 
-def o_Wijx2(i, j):
-  return [
-    (858+(5*i+j)*10, 1),
-    (859+(5*i+j)*10, 3)
-  ]
-
- 
-def l_Vijx(i, j):
-  return [
-    (862+(5*i+j)*10, -1)
-  ]
-
-
-def r_Vijx(i, j):
-  return [
-    (861+(5*i+j)*10, 1),
-    (867+(5*i+j)*10, -1)
-  ]
-
-
-def o_Vijx(i, j):
-  return [
-    (860+(5*i+j)*10, 1),
-    (866+(5*i+j)*10, 1)
-  ]
-
- 
-def l_Vijy(i, j):
+def r_QRsmn(m, n):
   return []
 
 
-def r_Vijy(i, j):
-  return []
-
-
-def o_Vijy(i, j):
+def o_QRsmn(m, n):
   return [
-    (861+(5*i+j)*10, 1),
-    (862+(5*i+j)*10, -1),
-    (867+(5*i+j)*10, 1)
-  ]
-
- 
-def l_Wijx(i, j):
-  return [
-    (858+(5*i+j+1)*10, 1-d(i, 4)*d(j, 4)),
-    (1108, d(i, 4)*d(j, 4))
-  ]
-
-
-def r_Wijx(i, j):
-  return [
-    (858+(5*i+j+1)*10, 1-d(i, 4)*d(j, 4)),
-    (861+(5*i+j+1)*10, d(i, 4)*d(j, 4)-1),
-    (864+(5*i+j)*10, 1),
-    (867+(5*i+j)*10, 1),
-    (1110, -d(i, 4)*d(j, 4))
-  ]
-
-
-def o_Wijx(i, j):
-  return [
-    (860+(5*i+j+1)*10, 2*(1-d(i, 4)*d(j, 4))),
-    (866+(5*i+j)*10, -1),
-    (1109, d(i, 4)*d(j, 4))
-  ]
-
- 
-def l_Wijy(i, j):
-  return []
-
-
-def r_Wijy(i, j):
-  return [
-    (859+(5*i+j+1)*10, 2*(1-d(i, 4)*d(j, 4))),
-    (865+(5*i+j)*10, 1)
-  ]
-
-
-def o_Wijy(i, j):
-  return [
-    (861+(5*i+j+1)*10, 1-d(i, 4)*d(j, 4)),
-    (867+(5*i+j)*10, -1),
-    (1108, d(i, 4)*d(j, 4)),
-    (1110, d(i, 4)*d(j, 4))
-  ]
-
- 
-def l_Wwijx(i, j):
-  return []
-
-
-def r_Wwijx(i, j):
-  return []
-
-
-def o_Wwijx(i, j):
-  return [
-    (864+(5*i+j)*10, 1),
-    (866+(5*i+j)*10, 2)
-  ]
-
- 
-def l_Wwijy(i, j):
-  return []
-
-
-def r_Wwijy(i, j):
-  return []
-
-
-def o_Wwijy(i, j):
-  return [
-    (865+(5*i+j)*10, 1),
-    (867+(5*i+j)*10, 2)
-  ]
-
- 
-def l_LW():
-  return [
-    (1109, 1),
-    (1110, 1)
-  ]
-
-
-def r_LW():
-  return [
-    (1108, 1),
-    (1109, 1)
-  ]
-
-
-def o_LW():
-  return []
-
- 
-def l_Wx():
-  return []
-
-
-def r_Wx():
-  return [
-    (1110, 1)
-  ]
-
-
-def o_Wx():
-  return [
-    (1109, 1)
-  ]
-
- 
-def l_Wy():
-  return []
-
-
-def r_Wy():
-  return []
-
-
-def o_Wy():
-  return [
-    (1110, 1)
+    (674+6*(50*m+n), 1),
+    (675+6*(50*m+n), 1),
   ]
 
 
 def l_Qmnx(m, n):
   return [
-    (672+(50*m+n)*3, -1 + d(m, 1)*d(n, 12)),
-    (1108, -d(m, 1)*d(n, 12))
+    (671+6*(50*m+n+1), 1-d(m, 1)*d(n, 12)),
+    (674+6*(50*m+n+1), 1-d(m, 1)*d(n, 12)),
+    (675+6*(50*m+n), 1),
+    (1315, d(m, 1)*d(n, 12)),
+    (1318, d(m, 1)*d(n, 12)),
   ]
 
 
 def r_Qmnx(m, n):
-  return [
-    (674+(50*m+n)*3, -1+d(m, 1)*d(n, 12)),
-    (674+(50*m+n-1)*3, 1-d(m, 0)*d(n, 0))
-  ]
+  return []
 
 
 def o_Qmnx(m, n):
-  return [
-    (671, d(m, 0)*d(n, 0)),
-    (673+(50*m+n)*3, 1-d(m, 1)*d(n, 12)),
-    (673+(50*m+n-1)*3, 1-d(m, 0)*d(n, 0)),
-    (1109, d(m, 1)*d(n, 12))
-  ]
+  return []
 
 
 def l_Qmny(m, n):
-  return []
+  return [
+    (672+6*(50*m+n+1), 1-d(m, 1)*d(n, 12)),
+    (674+6*(50*m+n+1), 1-d(m, 1)*d(n, 12)),
+    (676+6*(50*m+n), 1),
+    (1316, d(m, 1)*d(n, 12)),
+    (1318, d(m, 1)*d(n, 12)),
+  ]
 
 
 def r_Qmny(m, n):
@@ -947,12 +771,296 @@ def r_Qmny(m, n):
 
 
 def o_Qmny(m, n):
+  return []
+
+
+def l_Wijx2(i, j):
+  return []
+
+
+def r_Wijx2(i, j):
   return [
-    (672+(50*m+n)*3, d(m, 0)*d(n, 0)+d(m, 1)*d(n, 12)-1),
-    (674+(50*m+n)*3, 1-d(m, 1)*d(n, 12)),
-    (674+(50*m+n-1)*3, 1-d(m, 0)*d(n, 0)),
-    (1108, -d(m, 1)*d(n, 12))
+    (1054+(5*i+j)*11, bjj.JUBJUB_A.s*(1-d(i, 4)*d(j, 4))),
+    (1055+(5*i+j)*11, -bjj.JUBJUB_A.s*(1-d(i, 4)*d(j, 4))),
   ]
+
+
+def o_Wijx2(i, j):
+  return [
+    (1051+(5*i+j)*11, 1-d(i, 4)*d(j, 4)),
+    (1055+(5*i+j)*11, -bjj.JUBJUB_A.s*(1-d(i, 4)*d(j, 4))),
+  ]
+
+ 
+def l_Wijy2(i, j):
+  return []
+
+
+def r_Wijy2(i, j):
+  return [
+    (1054+(5*i+j)*11, 1-d(i, 4)*d(j, 4)),
+    (1055+(5*i+j)*11, -1+d(i, 4)*d(j, 4)),
+  ]
+
+
+def o_Wijy2(i, j):
+  return [
+    (1052+(5*i+j)*11, 1-d(i, 4)*d(j, 4)),
+    (1055+(5*i+j)*11, 1-d(i, 4)*d(j, 4)),
+  ]
+
+ 
+def l_Wijxy(i, j):
+  return []
+
+
+def r_Wijxy(i, j):
+  return []
+
+
+def o_Wijxy(i, j):
+  return [
+    (1053+(5*i+j)*11, 1-d(i, 4)*d(j, 4)),
+    (1054+(5*i+j)*11, 2*(1-d(i, 4)*d(j, 4))),
+  ]
+
+ 
+def l_Vijx(i, j):
+  return [
+    (1054+(5*i+j-1)*11, 1-d(i, 0)*d(j, 0)),
+    (1056+(5*i+j-1)*11, 1-d(i, 0)*d(j, 0)),
+    (1059+(5*i+j-1)*11, 1-d(i, 0)*d(j, 0)),
+  ]
+
+
+def r_Vijx(i, j):
+  return []
+
+
+def o_Vijx(i, j):
+  return []
+
+ 
+def l_Vijy(i, j):
+  return [
+    (1055+(5*i+j-1)*11, 1-d(i, 0)*d(j, 0)),
+    (1057+(5*i+j-1)*11, 1-d(i, 0)*d(j, 0)),
+    (1059+(5*i+j-1)*11, 1-d(i, 0)*d(j, 0)),
+  ]
+
+
+def r_Vijy(i, j):
+  return []
+
+
+def o_Vijy(i, j):
+  return []
+
+  
+def l_Vwxij(i, j):
+  return [
+    (1058+(5*i+j-1)*11, bjj.JUBJUB_D.s*(1-d(i, 0)*d(j, 0))),
+  ]
+
+
+def r_Vwxij(i, j):
+  return []
+
+
+def o_Vwxij(i, j):
+  return [
+    (1056+(5*i+j-1)*11, 1-d(i, 0)*d(j, 0)),
+    (1060+(5*i+j-1)*11, -1+d(i, 0)*d(j, 0)),
+    (1061+(5*i+j-1)*11, -bjj.JUBJUB_A.s*(1-d(i, 0)*d(j, 0))),
+  ]
+
+  
+def l_Vwyij(i, j):
+  return []
+
+
+def r_Vwyij(i, j):
+  return [
+    (1058+(5*i+j-1)*11, 1-d(i, 0)*d(j, 0)),
+  ]
+
+
+def o_Vwyij(i, j):
+  return [
+    (1057+(5*i+j-1)*11, 1-d(i, 0)*d(j, 0)),
+    (1060+(5*i+j-1)*11, -1+d(i, 0)*d(j, 0)),
+    (1061+(5*i+j-1)*11, 1-d(i, 0)*d(j, 0)),
+  ]
+
+ 
+def l_Vwdij(i, j):
+  return []
+
+
+def r_Vwdij(i, j):
+  return [
+    (1060+(5*i+j-1)*11, 1-d(i, 0)*d(j, 0)),
+    (1061+(5*i+j-1)*11, -1+d(i, 0)*d(j, 0)),
+  ]
+
+
+def o_Vwdij(i, j):
+  return [
+    (1058+(5*i+j-1)*11, 1-d(i, 0)*d(j, 0)),
+  ]
+
+ 
+def l_Vwsij(i, j):
+  return []
+
+
+def r_Vwsij(i, j):
+  return []
+
+
+def o_Vwsij(i, j):
+  return [
+    (1059+(5*i+j-1)*11, 1-d(i, 0)*d(j, 0)),
+    (1060+(5*i+j-1)*11, 1-d(i, 0)*d(j, 0)),
+  ]
+
+
+def l_Wijx(i, j):
+  return [
+    (1049, d(i, 0)*d(j, 0)),
+    (1051+(5*i+j)*11, 1-d(i, 4)*d(j, 4)),
+    (1053+(5*i+j)*11, 1-d(i, 4)*d(j, 4)),
+    (1060+(5*i+j-1)*11, 1-d(i, 0)*d(j, 0)),
+  ]
+
+
+def r_Wijx(i, j):
+  return [
+    (1051+(5*i+j)*11, 1-d(i, 4)*d(j, 4)),
+    (1315, d(i, 4)*d(j, 4)),
+    (1318, d(i, 4)*d(j, 4)),
+  ]
+
+
+def o_Wijx(i, j):
+  return []
+
+ 
+def l_Wijy(i, j):
+  return [
+    (1050, d(i, 0)*d(j, 0)),
+    (1052+(5*i+j)*11, 1-d(i, 4)*d(j, 4)),
+    (1061+(5*i+j-1)*11, 1-d(i, 0)*d(j, 0)),
+  ]
+
+
+def r_Wijy(i, j):
+  return [
+    (1052+(5*i+j)*11, 1-d(i, 4)*d(j, 4)),
+    (1053+(5*i+j)*11, 1-d(i, 4)*d(j, 4)),
+    (1316, d(i, 4)*d(j, 4)),
+    (1318, d(i, 4)*d(j, 4)),
+  ]
+
+
+def o_Wijy(i, j):
+  return []
+
+
+def l_QWx():
+  return [
+    (1317, bjj.JUBJUB_D.s),
+  ]
+
+
+def r_QWx():
+  return []
+
+
+def o_QWx():
+  return [
+    (1315, 1),
+    (1319, -1),
+    (1320, -bjj.JUBJUB_A.s),
+  ]
+
+ 
+def l_QWy():
+  return []
+
+
+def r_QWy():
+  return [
+    (1317, 1),
+  ]
+
+
+def o_QWy():
+  return [
+    (1316, 1),
+    (1319, -1),
+    (1320, 1),
+  ]
+
+
+def l_QWd():
+  return []
+
+
+def r_QWd():
+  return [
+    (1319, 1),
+    (1320, -1),
+  ]
+
+
+def o_QWd():
+  return [
+    (1317, 1),
+  ]
+
+
+def l_QWs():
+  return []
+
+
+def r_QWs():
+  return []
+
+
+def o_QWs():
+  return [
+    (1318, 1),
+    (1319, 1),
+  ]
+
+
+def l_Wx():
+  return [
+    (1319, 1),
+  ]
+
+
+def r_Wx():
+  return []
+
+
+def o_Wx():
+  return []
+
+ 
+def l_Wy():
+  return [
+    (1320, 1),
+  ]
+
+
+def r_Wy():
+  return []
+
+
+def o_Wy():
+  return []
 
 
 def l_v1():
@@ -971,21 +1079,15 @@ def l_v1():
   for q in range(20):
     ret.append((216+q, -1))
 
-  for q in range(50):
-    ret.append((608+q, yl(0, q, 1)))
+  for q in range(63):
+    m, n = q // 50, q % 50
+    ret.append((608+q, xl(m, n, 1)))
 
-  for q in range(13):
-    ret.append((608+50+q, yl(1, q, 1)))
- 
-  ret.append((671, xl(0, 0, 1)))
-
-  for q in range(50):
-    ret.append((672+(q-1)*3, xl(0, q, 1)*(1-d(q, 0))))
-
-  for q in range(13):
-    ret.append((672+(50+q-1)*3, xl(1, q, 1)))
-
-  ret.append((858, bjj.Gx))
+  ret += [
+    (671, 0),
+    (672, 1),
+    (674, 1),
+  ]
 
   return ret
 
@@ -1022,11 +1124,25 @@ def r_v1():
   for q in range(63):
     ret.append((608+q, 1))
 
+  for q in range(63):
+    m, n = q // 50, q % 50
+    ret.append((672+6*q, yl(m, n, 1)))
+    ret.append((674+6*q, yl(m, n, 1)))
+    ret.append((675+6*q, 1))
+    ret.append((676+6*q, 1))
+
+  for q in range(24):
+    ret.append((1055+11*q, 2))
+    ret.append((1057+11*q, 1))
+    ret.append((1059+11*q, 1))
+    ret.append((1060+11*q, 1))
+    ret.append((1061+11*q, 1))
+
   ret += [
-    (671, 1),
-    (858, bjj.Gx),
-    (859, 2*bjj.Gy),
-    (861, -bjj.Gx)
+    (1049, 1),
+    (1050, 1),
+    (1319, 1),
+    (1320, 1),
   ]
 
   return ret 
@@ -1035,16 +1151,8 @@ def r_v1():
 def o_v1():
   ret = []
 
-  for q in range(63):
-    m, n = q // 50, q % 50
-    ret.append((673+(50*m+n-1)*3, xl(m, n, 1)*(1-d(q, 0))))
-
-  for q in range(25):
-    ret.append((859+10*q, bjj.a))
-
   ret += [
-    (860, 2*bjj.Gx),
-    (861, bjj.Gy)
+    (1050, 1),
   ]
 
   return ret

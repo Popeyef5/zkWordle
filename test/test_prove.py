@@ -32,9 +32,11 @@ def valid_args(draw):
   a = s[0:5]
   w = s[5:10]
   
-  n = draw(st.integers(min_value=0, max_value=2**255-1))
-  H = zk.hash(n)
-  # TODO: fix missing H(n) + wG
+  n = draw(st.integers(min_value=0, max_value=2**253-1))
+  N = zk.hash(n)
+  wc = sum([n << 5*i for i, n in enumerate(w)])
+  W = wc * zk.ecc.bjj.Point.GENERATOR
+  H = W + N
   return [*s, H.x, H.y, n]
 
 

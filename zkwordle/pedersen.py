@@ -1,40 +1,35 @@
-from zkwordle.ecc import bjj, GroupElement
+from zkwordle.ecc import bjj
 from web3 import Web3
 import json
+import os
+
+from zkwordle.util import load_json
+
+LOAD_LOOKUP = int(os.environ.get("LOAD_LOOKUP", 1))
+
+if LOAD_LOOKUP:
+  try:
+    lookup = load_json('lookup.json')
+  except:
+    print("Unable to preload the lookup elements for Pedersen Hash. Remember to set LOAD_LOOKUP to 0 if no file exsists.")
+    exit(0)
 
 # (replicate by runing this generate(2))
 # Generators
 generators = [
-   {
-     'x': 14293604770338907046413411468626662208600242092671070123891535270955916765716,
-     'y': 16931903655476233095338254632264576238984860566592271344419174450729693154521
-   },
-   {
-     'x': 9577711637182991494004369593317413795851017562011530125394342660930391781057, 
-     'y': 20153490026823100497557517417463746391764585693453798230213741259837998220915
-   }
+  {'x': 6475754429882782203003994905906857116784534756624133315443781871325085335969,
+   'y': 1061669752226705182426438653967629486155153061846332681432965827148930796537
+  },
+  {'x': 11130047857281870482446215339847093381191806877983479531441339823419429614231, 
+   'y': 4725544795630025775791314500120412189499904222516352803721979933693965526546
+  }
 ]
-
 
 def generate(n, seed="wordle", curve=bjj):
   seed = str.encode(seed)
-  nonce = 0
   
-  generators = []
-
-  while len(generators) < n:
-    hash = Web3.keccak(seed + bytes([nonce]))
-    nonce += 1
-    
-    hash = int.from_bytes(hash, "big")
-    sign = hash & 1
-    x = hash >> 1
-    if not x < curve.p:
-      continue
-    
-    y = curve.from_x(x, sign)
-    if y:
-      generators.append({'x': x, 'y': y})
+  generators = bjj.hash_to_curve(seed, n)
+  generators = [{'x': P.x, 'y': P.y} for P in generators]
 
   return generators
 
@@ -48,42 +43,41 @@ def hash(input, generators=generators):
     s1 = (m >> 1) & 1
     s2 = (m >> 2) & 1
     s3 = (m >> 3) & 1
-    return (2*s3-1)*(1+s0+2*s1+4*s2)
+    return (1-2*s3)*(1+s0+2*s1+4*s2)
 
-  H = GroupElement.neutral() 
+  H = bjj.Point.ZERO
   
-  k = 0
-
-  # should it be <=?
-  while 2**(4*k) < input:
-    g_index = k // 50
-    j = k % 50
+  for k in range(63):
+    i, j = k // 50, k % 50
 
     m = (input >> (4*k)) & 0b1111
     e = enc(m)
     f = e * 2**(5*j) 
 
-    g = generators[g_index]
-    P = GroupElement.from_ints(g['x'], g['y'])
-    H = H + f * P
+    g = generators[i]
+    P = bjj.Point.from_ints(g['x'], g['y'])
+    H = H + P * bjj.Fr(f)
     
-    k += 1
-  
   return H
 
 
 def xl(m, n, k):
-  g = generators[m]
-  e = GroupElement.from_ints(g['x'], g['y'])
-  s = 2**(5*n) * k
-  ret = s * e
-  return ret.x
+  if LOAD_LOOKUP:
+    return lookup[str(m)][str(n)][str(k)]["x"]
+  else:
+    g = generators[m]
+    e = bjj.Point.from_ints(g['x'], g['y'])
+    s = 2**(5*n) * k
+    ret = s * e
+    return ret.x
 
 
 def yl(m, n, k):
-  g = generators[m]
-  e = GroupElement.from_ints(g['x'], g['y'])
-  s = 2**(5*n) * k
-  ret = s * e
-  return ret.y
-
+  if LOAD_LOOKUP:
+    return lookup[str(m)][str(n)][str(k)]["y"]
+  else:
+    g = generators[m]
+    e = bjj.Point.from_ints(g['x'], g['y'])
+    s = 2**(5*n) * k
+    ret = s * e
+    return ret.y

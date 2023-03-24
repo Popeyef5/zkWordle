@@ -1,6 +1,7 @@
 from zkwordle.points import *
-from zkwordle.util import Variable, fpoly1d, dump_json, load_json
-from zkwordle.ecc import G1, G2
+from zkwordle.util import dump_json, load_json
+from zkwordle.helpers import Variable, fpoly1d
+from zkwordle.ecc.bn128 import G1, G2
 
 import time
 
@@ -45,8 +46,11 @@ def setup(crs=None, load_polys=None, save_polys=None):
       for type, poly_dict in data[name].items():
         polys[name][type] = fpoly1d(poly_dict["coeffs"], poly_dict["prime"])
 
+  print(f"poly load done in {time.monotonic() - st}s")
+
   
   def import_var(name, points_l, points_r, points_o, visibility=Variable.PRIVATE):
+    t1 = time.monotonic()
     if name in polys:
       var = Variable.from_polys(polys[name], name, visibility)
     else:
@@ -57,10 +61,14 @@ def setup(crs=None, load_polys=None, save_polys=None):
       polys[name]['l'] = var.polys['l'].poly
       polys[name]['r'] = var.polys['r'].poly
       polys[name]['o'] = var.polys['o'].poly
+    
+    t2 = time.monotonic()
    
     l = var.evaluate('l', crs.s) 
     r = var.evaluate('r', crs.s) 
-    o = var.evaluate('o', crs.s) 
+    o = var.evaluate('o', crs.s)
+
+    t3 = time.monotonic()
 
     proving_key['l'][name] = l * crs.Grho_l
     proving_key['ls'][name] = l * crs.Grho_ls
@@ -70,6 +78,10 @@ def setup(crs=None, load_polys=None, save_polys=None):
     proving_key['os'][name] = o * crs.Grho_os
 
     proving_key['k'][name] = (crs.beta * (l * crs.rho_l + r * crs.rho_r + o * crs.rho_o)) * crs.G1
+
+    t4 = time.monotonic()
+
+    print(f"Import finished. Setup: {(t2-t1)/(t4-t1)}. Evaluation: {(t3-t2)/(t4-t1)}. Key prep: {(t4-t3)/(t4-t1)}")
 
     if visibility==Variable.PUBLIC:
       proving_key['l'][name] = 0 * crs.Grho_l
@@ -174,74 +186,73 @@ def setup(crs=None, load_polys=None, save_polys=None):
     m, n = q // 50, q % 50
     import_var(f'b&{m}{n}', l_bJmn(m, n), r_bJmn(m, n), o_bJmn(m, n))
  
-  #ys_mn
+  #R_mnx
   for q in range(63):
     m, n = q // 50, q % 50
-    import_var(f'ys{m}{n}', l_ysmn(m, n), r_ysmn(m, n), o_ysmn(m, n))
+    import_var(f'R{m}{n}x', l_Rmnx(m, n), r_Rmnx(m, n), o_Rmnx(m, n))
+
+  #Q loop
+  for q in range(63):
+    m, n = q // 50, q % 50
+    import_var(f'QRx{m}{n}', l_QRxmn(m, n), r_QRxmn(m, n), o_QRxmn(m, n))
+    import_var(f'QRy{m}{n}', l_QRymn(m, n), r_QRymn(m, n), o_QRymn(m, n))
+    import_var(f'QRd{m}{n}', l_QRdmn(m, n), r_QRdmn(m, n), o_QRdmn(m, n))
+    import_var(f'QRs{m}{n}', l_QRsmn(m, n), r_QRsmn(m, n), o_QRsmn(m, n))
 
   #Q_mn
-  import_var('Q00x', l_Qmnx(0, 0), r_Qmnx(0, 0), o_Qmnx(0, 0))
-  for q in range(1, 63):
+  for q in range(63):
     m, n = q // 50, q % 50
     import_var(f'Q{m}{n}x', l_Qmnx(m, n), r_Qmnx(m, n), o_Qmnx(m, n))
     import_var(f'Q{m}{n}y', l_Qmny(m, n), r_Qmny(m, n), o_Qmny(m, n))
 
-  #LQ_mn
-  for q in range(1, 63):
-    m, n = q // 50, q % 50
-    import_var(f'LQ{m}{n}', l_LQmn(m, n), r_LQmn(m, n), o_LQmn(m, n))
- 
   #W_ij
-  for i in range(5):
-    for j in range(5):
-      import_var(f'W{i}{j}x', l_Wijx(i, j), r_Wijx(i, j), o_Wijx(i, j))
-      import_var(f'W{i}{j}x2', l_Wijx2(i, j), r_Wijx2(i, j), o_Wijx2(i, j))
-      import_var(f'W{i}{j}y', l_Wijy(i, j), r_Wijy(i, j), o_Wijy(i, j))
-
-  #V_ij
-  for i in range(5):
-    for j in range(5):
-      import_var(f'V{i}{j}x', l_Vijx(i, j), r_Vijx(i, j), o_Vijx(i, j))
-      import_var(f'V{i}{j}y', l_Vijy(i, j), r_Vijy(i, j), o_Vijy(i, j))
+  for q in range(25):
+    i, j = q // 5, q % 5
+    import_var(f'W{i}{j}x', l_Wijx(i, j), r_Wijx(i, j), o_Wijx(i, j))
+    import_var(f'W{i}{j}y', l_Wijy(i, j), r_Wijy(i, j), o_Wijy(i, j))
   
-  #Ww_ij  
-  for i in range(5):
-    for j in range(5):
-      import_var(f'Ww{i}{j}x', l_Wwijx(i, j), r_Wwijx(i, j), o_Wwijx(i, j))
-      import_var(f'Ww{i}{j}y', l_Wwijy(i, j), r_Wwijy(i, j), o_Wwijy(i, j))
-
-  #LD_ij
-  for i in range(5):
-    for j in range(5):
-      import_var(f'LD{i}{j}', l_LDij(i, j), r_LDij(i, j), o_LDij(i, j)) 
-
-  #LA_ij
-  for i in range(5):
-    for j in range(5):
-      import_var(f'LA{i}{j}', l_LAij(i, j), r_LAij(i, j), o_LAij(i, j)) 
-
-  #LAw_ij
-  for i in range(5):
-    for j in range(5):
-      import_var(f'LAw{i}{j}', l_LAwij(i, j), r_LAwij(i, j), o_LAwij(i, j)) 
-
-  #LW
-  import_var('LW', l_LW(), r_LW(), o_LW())
+  for q in range(24):
+    i, j = q // 5, q % 5
+    import_var(f'W{i}{j}x2', l_Wijx2(i, j), r_Wijx2(i, j), o_Wijx2(i, j))
+    import_var(f'W{i}{j}y2', l_Wijy2(i, j), r_Wijy2(i, j), o_Wijy2(i, j))
+    import_var(f'W{i}{j}xy', l_Wijxy(i, j), r_Wijxy(i, j), o_Wijxy(i, j))
+  
+  #V_ij
+  for q in range(1, 25):
+    i, j = q // 5, q % 5
+    import_var(f'V{i}{j}x', l_Vijx(i, j), r_Vijx(i, j), o_Vijx(i, j))
+    import_var(f'V{i}{j}y', l_Vijy(i, j), r_Vijy(i, j), o_Vijy(i, j))
+    import_var(f'Vwx{i}{j}', l_Vwxij(i, j), r_Vwxij(i, j), o_Vwxij(i, j))
+    import_var(f'Vwy{i}{j}', l_Vwyij(i, j), r_Vwyij(i, j), o_Vwyij(i, j))
+    import_var(f'Vwd{i}{j}', l_Vwdij(i, j), r_Vwdij(i, j), o_Vwdij(i, j))
+    import_var(f'Vws{i}{j}', l_Vwsij(i, j), r_Vwsij(i, j), o_Vwsij(i, j))
+  
+  #QW
+  import_var(f'QWx', l_QWx(), r_QWx(), o_QWx())
+  import_var(f'QWy', l_QWy(), r_QWy(), o_QWy())
+  import_var(f'QWd', l_QWd(), r_QWd(), o_QWd())
+  import_var(f'QWs', l_QWs(), r_QWs(), o_QWs())
 
   #v_one
   import_var('v1', l_v1(), r_v1(), o_v1(), Variable.PUBLIC)
+
+  t1 = time.monotonic()
 
   for i in range(R1CS_LENGTH+1):
     proving_key['h'][i] = (crs.s ** i) * crs.G1
 
   if save_polys is not None:
     dump_json(polys, save_polys)
+
+  t2 = time.monotonic()
   
   t = fpoly1d([1])
   for i in range(1, R1CS_LENGTH+1):
     t *= fpoly1d([1, -i])
 
   t_s = t(crs.s)
+
+  t3 = time.monotonic()
 
   proving_key['lt'] = t_s * crs.Grho_l
   proving_key['rt'] = t_s * crs.Grho_r2
@@ -263,6 +274,7 @@ def setup(crs=None, load_polys=None, save_polys=None):
 
   et = time.monotonic()
   print(f"Finished setup in {et-st}s.")
+  print(f"variable import: {(t1-st)/(et-st)}. Proving h: {(t2-t1)/(et-st)}. T: {(t3-t2)/(et-st)}. Key setup: {(et-t3)/(et-st)}.")
 
   return proving_key, verification_key, polys
 
